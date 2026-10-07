@@ -237,7 +237,6 @@ function parseBrowserSheet(ws){
     const t=clean(g('TURNO')).match(/\d/);
     const bairro=clean(g('BAIRRO')).toLowerCase().replace(/(^|\s)\S/g,x=>x.toUpperCase())||'Não informado';
     const logradouro=clean(g('LOGRADOURO','ENDERECO')).toLowerCase().replace(/(^|\s)\S/g,x=>x.toUpperCase())||'Não informado';
-    const tipoVeiculo=catl(g('TIPO DE VEICULO','TIPO VEICULO','TIPO')); 
     const bairroRec=clean(g('BAIRRO2','BAIRRO DA RECUPERACAO')).toLowerCase().replace(/(^|\s)\S/g,x=>x.toUpperCase());
     const recuperacao=(()=>{const s=clean(g('DATA DA RECUPERACAO'));return /^n[ãa]o recuperad/i.test(s)?'Não recuperado':s?'Recuperado':'Não informado'})();
     const logrRec=(()=>{const s=clean(g('LOGRADOURO DA RECUPERACAO'));return /^n[ãa]o recuperad/i.test(s)?'Não recuperado':s?s.toLowerCase().replace(/(^|\s)\S/g,x=>x.toUpperCase()):'Não informado'})();
@@ -251,7 +250,7 @@ function parseBrowserSheet(ws){
       motivacao:clean(g('MOTIVACAO')),arma:catl(g('ARMA UTILIZADA','ARMA USADA NO ROUBO')),
       local_fato:locL(g('LOCAL DO FATO','LOCAL')),
       abordagem:catl(g('MODO DE ABORDAGEM','ABORDAGEM','VEICULO','MEIO UTILIZADO','MEIO UTILIZADO / MODO DE ABORDAGEM')),
-      logradouro,tipo_veiculo:tipoVeiculo,modelo:catl(g('MODELO')).toUpperCase(),marca:catl(g('MARCA')).toUpperCase(),
+      logradouro,tipo_veiculo:catl(g('TIPO DE VEICULO','TIPO VEICULO','TIPO')),modelo:catl(g('MODELO')).toUpperCase(),marca:catl(g('MARCA')).toUpperCase(),
       bairro_recuperacao:bairroRec||'',estabelecimento:catl(g('ESTABELECIMENTO COMERCIAL')).toUpperCase(),
       tipo_roubo:catl(g('TIPO')),material:matL(g('MATERIAL 1','MATERIAL')),modo_acao:modoL(g('MODO DE ACAO','MODO DE AÇÃO')),
       recuperacao,logradouro_recuperacao:logrRec,tipo_local:catl(g('TIPO')),empresa,linha,
