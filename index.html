@@ -216,18 +216,38 @@ function toHour(v){
   return -1;
 }
 function people(v,i){
-  const keys=[];
   const raw=clean(v);
-  if(!raw || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(raw)) return keys;
-  String(raw).split(/[\/;\n]/).forEach((p,j)=>{
-    const c=clean(p);
-    if(!c || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(c))return;
-    if(/^(CARRO|MOTO|MOTOCICLETA|VEICULO|VEÍCULO|BICICLETA)/i.test(c))return;
-    const ds=c.match(/\d{10,}/g);
-    if(ds)ds.forEach(x=>keys.push('d'+x));
-    else if(c.length>3)keys.push(`x${i}_${j}_${nk(c).slice(0,40)}`);
-  });
-  return [...new Set(keys)];
+  if(!raw || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(raw)) return [];
+
+  const out=[];
+  const addName=(name,rg='')=>{
+    let n=clean(name).replace(/\(SUSPEITO\)/ig,'').trim();
+    n=n.replace(/^[\s,\-;]+|[\s,\-;]+$/g,'').trim();
+    if(!n || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(n)) return;
+    if(/^\d+$/.test(n)) return;
+    if(/^1\s+SEM\s+IDENTIFICA[CÇ][AÃ]O$/i.test(n)) n='SEM IDENTIFICAÇÃO';
+    const key=rg ? 'rg:'+String(rg).replace(/\D/g,'') : 'nome:'+nk(n);
+    if(key!=='rg:' && key!=='nome:' && !out.includes(key)) out.push(key);
+  };
+
+  const rgRe=/RG\s*:\s*([0-9]{4,})?/ig;
+  const matches=[...raw.matchAll(rgRe)];
+
+  if(matches.length){
+    let prevEnd=0;
+    for(const m of matches){
+      const seg=raw.slice(prevEnd,m.index);
+      const parts=seg.split(/\s*\+\s*/);
+      addName(parts.shift()||'',m[1]||'');
+      parts.forEach(p=>addName(p,''));
+      prevEnd=m.index+m[0].length;
+    }
+    const tail=raw.slice(prevEnd);
+    tail.split(/\s*\+\s*|\s+-\s+/).forEach(p=>addName(p,''));
+  }else{
+    raw.split(/\s*\+\s*|\s+-\s+/).forEach(p=>addName(p,''));
+  }
+  return out;
 }
 function normalizePresos(v){
   if(Array.isArray(v)) return v.filter(x=>x!=null&&String(x).trim()!=='');
