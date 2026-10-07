@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agência Local de Inteligência - 1º BPM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#071426;color:#10243e;min-height:100vh}
+.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:min(460px,100%);background:#fff;border-radius:20px;padding:34px;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+h1{margin:0 0 8px;font-size:28px;color:#0a2a4d}.subtitle{margin:0 0 28px;color:#60748b;line-height:1.5}
+label{display:block;font-weight:700;margin:16px 0 8px}input{width:100%;padding:14px 15px;border:1px solid #c9d5e3;border-radius:10px;font-size:16px;outline:none}
+input:focus{border-color:#0f8b82;box-shadow:0 0 0 3px rgba(15,139,130,.12)}
+button{width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:22px;background:#10877d;color:#fff}
+.msg{margin-top:16px;min-height:22px;color:#c62828;line-height:1.4}.hidden{display:none!important}
+.panel{min-height:100vh;background:#f4f7fb}.top{background:#0a2a4d;color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brand{font-size:20px;font-weight:700}.userbox{text-align:right;font-size:14px}.role{display:inline-block;margin-top:4px;background:#10877d;padding:4px 9px;border-radius:999px;font-weight:700}
+.content{max-width:1200px;margin:0 auto;padding:30px}.welcome{background:#fff;border-radius:16px;padding:28px;box-shadow:0 5px 20px rgba(0,0,0,.06)}
+.welcome h2{margin-top:0}.status{margin-top:18px;padding:14px;background:#edf8f6;border-radius:10px;color:#17665f}.logout{width:auto;margin:0;background:#fff;color:#0a2a4d;padding:9px 14px}
+@media(max-width:650px){.top{flex-direction:column;align-items:flex-start}.userbox{text-align:left}.content{padding:18px}}
+</style>
+</head>
+<body>
+<div id="loginScreen" class="wrap">
+<div class="card">
+<h1>Agência Local de Inteligência</h1>
+<p class="subtitle">1º BPM — faça login para acessar o sistema.</p>
+<form id="loginForm">
+<label for="email">E-mail</label>
+<input id="email" type="email" autocomplete="username" required>
+<label for="password">Senha</label>
+<input id="password" type="password" autocomplete="current-password" required>
+<button type="submit">Entrar</button>
+<div id="loginMsg" class="msg"></div>
+</form>
+</div>
+</div>
+
+<div id="app" class="panel hidden">
+<header class="top">
+<div class="brand">AGÊNCIA LOCAL DE INTELIGÊNCIA — 1º BPM</div>
+<div class="userbox"><div id="userEmail"></div><div id="userRole" class="role"></div><button id="logoutBtn" class="logout">Sair</button></div>
+</header>
+<main class="content">
+<section class="welcome">
+<h2>Painel inicial</h2>
+<p>Autenticação e controle de perfil funcionando.</p>
+<div class="status">Usuário autenticado com sucesso.</div>
+</section>
+</main>
+</div>
+
+<script src="./supabase-config.js"></script>
+<script>
+(function(){
+'use strict';
+const loginScreen=document.getElementById('loginScreen');
+const app=document.getElementById('app');
+const loginForm=document.getElementById('loginForm');
+const loginMsg=document.getElementById('loginMsg');
+const userEmail=document.getElementById('userEmail');
+const userRole=document.getElementById('userRole');
+const logoutBtn=document.getElementById('logoutBtn');
+
+if(!window.supabase||!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){
+loginMsg.textContent='Configuração do Supabase não encontrada.';return;
+}
+const client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
+const roleNames={admin:'Administrador',operador:'Operador',visualizacao:'Visualização'};
+
+function showLogin(message){app.classList.add('hidden');loginScreen.classList.remove('hidden');loginMsg.textContent=message||'';}
+function showApp(session,role){loginScreen.classList.add('hidden');app.classList.remove('hidden');userEmail.textContent=session.user.email||'';userRole.textContent=roleNames[role]||role;}
+
+async function loadProfile(userId){
+const result=await client.from('profiles').select('id,nome,role').eq('id',userId).single();
+if(result.error)throw new Error('Perfil: '+result.error.message);
+if(!result.data||!result.data.role)throw new Error('Perfil não encontrado.');
+return result.data;
+}
+
+loginForm.addEventListener('submit',async function(event){
+event.preventDefault();loginMsg.textContent='Entrando...';
+const email=document.getElementById('email').value.trim();
+const password=document.getElementById('password').value;
+const result=await client.auth.signInWithPassword({email,password});
+if(result.error){loginMsg.textContent='Erro de login: '+result.error.message;return;}
+try{
+const profile=await loadProfile(result.data.user.id);
+showApp(result.data.session,profile.role);
+}catch(error){
+console.error(error);await client.auth.signOut();
+showLogin('Login realizado, mas não foi possível carregar o perfil: '+error.message);
+}
+});
+
+logoutBtn.addEventListener('click',async function(){
+await client.auth.signOut();showLogin('');document.getElementById('password').value='';
+});
+
+client.auth.getSession().then(async function(result){
+const session=result.data.session;if(!session)return;
+try{const profile=await loadProfile(session.user.id);showApp(session,profile.role);}
+catch(error){console.error(error);await client.auth.signOut();showLogin('Sessão encontrada, mas o perfil não pôde ser carregado: '+error.message);}
+});
+})();
+</script>
+</body>
+</html>
