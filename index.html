@@ -217,13 +217,25 @@ function toHour(v){
 }
 function people(v,i){
   const keys=[];
-  String(v==null?'':v).split(/[\/;\n]/).forEach((p,j)=>{
-    if(/^(CARRO|MOTO|MOTOCICLETA|VEICULO|VEÍCULO|BICICLETA)/i.test(clean(p)))return;
-    const ds=p.match(/\d{10,}/g);
+  const raw=clean(v);
+  if(!raw || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(raw)) return keys;
+  String(raw).split(/[\/;\n]/).forEach((p,j)=>{
+    const c=clean(p);
+    if(!c || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(c))return;
+    if(/^(CARRO|MOTO|MOTOCICLETA|VEICULO|VEÍCULO|BICICLETA)/i.test(c))return;
+    const ds=c.match(/\d{10,}/g);
     if(ds)ds.forEach(x=>keys.push('d'+x));
-    else{const c=clean(p);if(c.length>3&&!/^(nan|ni|n[ãa]o recuperad[oa])$/i.test(c))keys.push(`x${i}_${j}`)}
+    else if(c.length>3)keys.push(`x${i}_${j}_${nk(c).slice(0,40)}`);
   });
-  return keys;
+  return [...new Set(keys)];
+}
+function normalizePresos(v){
+  if(Array.isArray(v)) return v.filter(x=>x!=null&&String(x).trim()!=='');
+  const s=clean(v);
+  if(!s || /^(nan|ni|n[ãa]o informado|n[ãa]o possui)$/i.test(s)) return [];
+  try{ const j=JSON.parse(s); if(Array.isArray(j)) return j.filter(x=>x!=null&&String(x).trim()!==''); }catch(e){}
+  if(s.startsWith('{')&&s.endsWith('}')) return s.slice(1,-1).split(',').map(x=>x.replace(/^\"|\"$/g,'').trim()).filter(Boolean);
+  return s.split(/[|;\n]/).map(x=>x.trim()).filter(Boolean);
 }
 function parseBrowserSheet(ws){
   const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
@@ -302,7 +314,7 @@ async function loadData(){
     DS[k].label='Banco de dados · '+all.length+' ocorrências';
   }
 }
-function dbToRow(r){return [r.data,r.cia??0,r.turno??0,r.bairro||'Não informado',r.dia_semana||dayName(r.data),r.hora==null?-1:r.hora,Array.isArray(r.presos_ids)?r.presos_ids:[],r.motivacao||'',r.arma||'Não informado',r.local_fato||'Não informado',r.abordagem||'Não informado',r.logradouro||'Não informado',r.tipo_veiculo||'Não informado',r.modelo||'Não informado',r.marca||'Não informado',r.bairro_recuperacao||'',r.estabelecimento||'',r.tipo_roubo||'',r.material||'',r.modo_acao||'',r.recuperacao||'',r.logradouro_recuperacao||'',r.tipo_local||'',r.empresa||'',r.linha||'',r.orcrim_vitima||'Não informado',r.orcrim_autor||'Não informado']}
+function dbToRow(r){return [r.data,r.cia??0,r.turno??0,r.bairro||'Não informado',r.dia_semana||dayName(r.data),r.hora==null?-1:r.hora,normalizePresos(r.presos_ids),r.motivacao||'',r.arma||'Não informado',r.local_fato||'Não informado',r.abordagem||'Não informado',r.logradouro||'Não informado',r.tipo_veiculo||'Não informado',r.modelo||'Não informado',r.marca||'Não informado',r.bairro_recuperacao||'',r.estabelecimento||'',r.tipo_roubo||'',r.material||'',r.modo_acao||'',r.recuperacao||'',r.logradouro_recuperacao||'',r.tipo_local||'',r.empresa||'',r.linha||'',r.orcrim_vitima||'Não informado',r.orcrim_autor||'Não informado']}
 function dayName(date){const d=new Date(date+'T00:00:00Z');return DIA[d.getUTCDay()]||''}
 Object.keys(DS).forEach(k=>DS[k].label='Banco de dados · 0 ocorrências');
 sw('cvli');
