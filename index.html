@@ -251,7 +251,7 @@ function parseBrowserSheet(ws){
       motivacao:clean(g('MOTIVACAO')),arma:catl(g('ARMA UTILIZADA','ARMA USADA NO ROUBO')),
       local_fato:locL(g('LOCAL DO FATO','LOCAL')),
       abordagem:catl(g('MODO DE ABORDAGEM','ABORDAGEM','VEICULO','MEIO UTILIZADO','MEIO UTILIZADO / MODO DE ABORDAGEM')),
-      logradouro,tipo_veiculo,modelo:catl(g('MODELO')).toUpperCase(),marca:catl(g('MARCA')).toUpperCase(),
+      logradouro,tipo_veiculo:tipoVeiculo,modelo:catl(g('MODELO')).toUpperCase(),marca:catl(g('MARCA')).toUpperCase(),
       bairro_recuperacao:bairroRec||'',estabelecimento:catl(g('ESTABELECIMENTO COMERCIAL')).toUpperCase(),
       tipo_roubo:catl(g('TIPO')),material:matL(g('MATERIAL 1','MATERIAL')),modo_acao:modoL(g('MODO DE ACAO','MODO DE AÇÃO')),
       recuperacao,logradouro_recuperacao:logrRec,tipo_local:catl(g('TIPO')),empresa,linha,
