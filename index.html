@@ -1,109 +1,130 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agência Local de Inteligência - 1º BPM</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agência Local de Inteligência — 1º BPM</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#071426;color:#10243e;min-height:100vh}
-.wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.card{width:min(460px,100%);background:#fff;border-radius:20px;padding:34px;box-shadow:0 20px 60px rgba(0,0,0,.22)}
-h1{margin:0 0 8px;font-size:28px;color:#0a2a4d}.subtitle{margin:0 0 28px;color:#60748b;line-height:1.5}
-label{display:block;font-weight:700;margin:16px 0 8px}input{width:100%;padding:14px 15px;border:1px solid #c9d5e3;border-radius:10px;font-size:16px;outline:none}
-input:focus{border-color:#0f8b82;box-shadow:0 0 0 3px rgba(15,139,130,.12)}
-button{width:100%;border:0;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;margin-top:22px;background:#10877d;color:#fff}
-.msg{margin-top:16px;min-height:22px;color:#c62828;line-height:1.4}.hidden{display:none!important}
-.panel{min-height:100vh;background:#f4f7fb}.top{background:#0a2a4d;color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-.brand{font-size:20px;font-weight:700}.userbox{text-align:right;font-size:14px}.role{display:inline-block;margin-top:4px;background:#10877d;padding:4px 9px;border-radius:999px;font-weight:700}
-.content{max-width:1200px;margin:0 auto;padding:30px}.welcome{background:#fff;border-radius:16px;padding:28px;box-shadow:0 5px 20px rgba(0,0,0,.06)}
-.welcome h2{margin-top:0}.status{margin-top:18px;padding:14px;background:#edf8f6;border-radius:10px;color:#17665f}.logout{width:auto;margin:0;background:#fff;color:#0a2a4d;padding:9px 14px}
-@media(max-width:650px){.top{flex-direction:column;align-items:flex-start}.userbox{text-align:left}.content{padding:18px}}
+:root{--navy:#0b2f55;--teal:#11877f;--bg:#eef3f8;--card:#fff;--text:#10243e;--muted:#65768a;--border:#d7e0e9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+header{background:var(--navy);color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}header h1{font-size:20px;margin:0}.userbox{display:flex;align-items:center;gap:8px;font-size:13px}.badge{background:#0d9b8e;padding:5px 10px;border-radius:999px;font-weight:700}
+main{max-width:1450px;margin:24px auto;padding:0 18px}.login{max-width:520px;margin:65px auto;background:#fff;padding:34px;border-radius:18px;box-shadow:0 10px 30px #10243e18}.login h2{margin:0 0 8px}.help{color:var(--muted);font-size:13px}.field{margin:15px 0}.field label{display:block;font-weight:700;margin-bottom:7px}.field input{width:100%;padding:13px;border:1px solid #c8d5e2;border-radius:9px;font-size:16px}
+button,.filelabel,select{font:inherit}button{border:0;border-radius:9px;padding:11px 16px;font-weight:700;cursor:pointer}.primary,.filelabel{background:var(--teal);color:#fff}.secondary{background:#e4ebf3;color:#14273e}
+.toolbar,.card{background:var(--card);border:1px solid var(--border);border-radius:15px;box-shadow:0 4px 16px #10243e0d}.toolbar{padding:16px;display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:18px}.filelabel{display:inline-flex;padding:11px 16px;cursor:pointer}.toolbar select{padding:10px;border:1px solid #c8d5e2;border-radius:9px;background:#fff}.toolbar input{display:none}
+.titlebar{display:flex;justify-content:space-between;gap:15px;margin-bottom:18px}.titlebar h2{margin:0 0 5px}.titlebar p{margin:0;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.stat{padding:17px}.stat small{color:var(--muted);text-transform:uppercase;font-weight:700}.stat strong{display:block;font-size:27px;margin-top:7px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}.chart-card{padding:16px;min-height:350px}.chart-card h3{margin:0 0 4px;font-size:16px}.chart-card p{margin:0 0 10px;color:var(--muted);font-size:12px}.canvas{height:280px}
+.notice{padding:12px 14px;border-radius:10px;background:#eaf7f5;color:#075f59;margin:10px 0}.error{background:#fff0ef;color:#a51d13}.hidden{display:none!important}
+@media(max-width:850px){.grid,.stats{grid-template-columns:1fr 1fr}}@media(max-width:600px){.grid,.stats{grid-template-columns:1fr}header{align-items:flex-start}.titlebar{display:block}}
 </style>
 </head>
 <body>
-<div id="loginScreen" class="wrap">
-<div class="card">
-<h1>Agência Local de Inteligência</h1>
-<p class="subtitle">1º BPM — faça login para acessar o sistema.</p>
-<form id="loginForm">
-<label for="email">E-mail</label>
-<input id="email" type="email" autocomplete="username" required>
-<label for="password">Senha</label>
-<input id="password" type="password" autocomplete="current-password" required>
-<button type="submit">Entrar</button>
-<div id="loginMsg" class="msg"></div>
-</form>
-</div>
-</div>
-
-<div id="app" class="panel hidden">
-<header class="top">
-<div class="brand">AGÊNCIA LOCAL DE INTELIGÊNCIA — 1º BPM</div>
-<div class="userbox"><div id="userEmail"></div><div id="userRole" class="role"></div><button id="logoutBtn" class="logout">Sair</button></div>
+<header>
+<h1>AGÊNCIA LOCAL DE INTELIGÊNCIA — 1º BPM</h1>
+<div id="userBox" class="userbox hidden"><span id="userEmail"></span><span id="roleBadge" class="badge">Usuário</span><button id="logout" class="secondary">Sair</button></div>
 </header>
-<main class="content">
-<section class="welcome">
-<h2>Painel inicial</h2>
-<p>Autenticação e controle de perfil funcionando.</p>
-<div class="status">Usuário autenticado com sucesso.</div>
+
+<section id="login" class="login">
+<h2>Acesso ao Dashboard</h2><p class="help">Anexe os arquivos Excel diretamente do computador. O sistema lê os dados no navegador e monta o dashboard específico de cada ocorrência.</p>
+<div class="field"><label>E-mail</label><input id="email" type="email" autocomplete="username"></div>
+<div class="field"><label>Senha</label><input id="password" type="password" autocomplete="current-password"></div>
+<button id="entrar" class="primary" style="width:100%">Entrar</button>
+<div id="loginMsg" class="notice hidden"></div>
 </section>
-</main>
+
+<main id="app" class="hidden">
+<div class="toolbar">
+<label class="filelabel" for="file">📎 Anexar arquivo Excel</label><input id="file" type="file" accept=".xlsx,.xls,.csv">
+<select id="tipo"><option value="">Identificar automaticamente</option></select>
+<button id="limpar" class="secondary">Limpar</button>
+<span id="info" class="help">Nenhum arquivo carregado.</span>
 </div>
+<div id="msg" class="notice hidden"></div>
+<div id="dashboard"></div>
+</main>
 
 <script src="./supabase-config.js"></script>
 <script>
 (function(){
 'use strict';
-const loginScreen=document.getElementById('loginScreen');
-const app=document.getElementById('app');
-const loginForm=document.getElementById('loginForm');
-const loginMsg=document.getElementById('loginMsg');
-const userEmail=document.getElementById('userEmail');
-const userRole=document.getElementById('userRole');
-const logoutBtn=document.getElementById('logoutBtn');
+const sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+const MONTHS=['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const DAYS=['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+let charts=[],session=null,role='usuario';
 
-if(!window.supabase||!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY){
-loginMsg.textContent='Configuração do Supabase não encontrada.';return;
+const CFG={
+cvli:{title:'CRIMES VIOLENTOS LETAIS E INTENCIONAIS',match:['CVLI'],sheet:['BASE DE DADOS','DADOS'],charts:[['MÊS','Mês','bar'],['Dia Semana','Dia da semana','bar'],['TURNO','Turno','bar'],['BAIRRO','Bairro','bar'],['ORCRIM3','ORCRIM','pie'],['MOTIVAÇÃO','Motivação','bar']]},
+arromb:{title:'FURTO ARROMBAMENTO',match:['FURTO ARROMBAMENTO','ARROMBAMENTO'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['SEMANA','Dia da semana','bar'],['BAIRRO','Bairro','bar'],['CIA','CIA','pie'],['TIPO','Tipo','bar'],['TURNO','Turno','pie'],['LOGRADOURO','Logradouro','bar']]},
+furtoveiculo:{title:'FURTO DE VEÍCULO',match:['FURTO DE VEÍCULO','FURTO DE VEICULO'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['SEMANA','Dia da semana','bar'],['TURNO','Turno','bar'],['LOGRADOURO','Logradouro','bar'],['TIPO DE VEÍCULO','Tipo de veículo','pie'],['MARCA','Marca','bar'],['MODELO','Modelo','bar'],['BAIRRO','Bairro','bar'],['MUNICÍPIO','Município','bar']]},
+furtoveic:{title:'FURTO EM VEÍCULO',match:['FURTO EM VEÍCULO','FURTO EM VEICULO'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['DIA','Dia da semana','bar'],['TURNO','Turno','bar'],['CIA','CIA','pie'],['BAIRRO','Bairro','bar'],['ENDEREÇO','Endereço','bar'],['MARCA','Marca','bar'],['LOCAL','Local do fato','bar'],['MODELO','Modelo','bar']]},
+fios:{title:'FURTO DE FIOS E CABOS',match:['FURTO FIOS E CABOS','FURTO DE FIOS E CABOS','FIOS E CABOS'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['DIA SEMANA','Dia da semana','bar'],['TURNO','Turno','pie'],['BAIRRO','Bairro','bar'],['CIA','CIA','bar'],['LOGRADOURO','Logradouro','bar']]},
+estab:{title:'ROUBO A ESTABELECIMENTO COMERCIAL',match:['ROUBO A ESTABELECIMENTO COMERCIAL','ESTABELECIMENTO COMERCIAL'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['Dia Semana','Dia da semana','bar'],['TURNO','Turno','bar'],['BAIRRO','Bairro','bar'],['CIA','CIA','bar'],['LOCAL DO FATO','Local do fato','bar'],['ESTABELECIMENTO COMERCIAL','Estabelecimento','bar'],['ARMA UTILIZADA','Arma utilizada','bar'],['VEÍCULO','Veículo','bar'],['PRESO','Preso','pie'],['TIPO','Tipo','bar']]},
+pedestre:{title:'ROUBO A PEDESTRE',match:['ROUBO A PEDESTRE','PEDESTRE'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['TURNO','Turno','bar'],['BAIRRO','Bairro','bar'],['CIA','CIA','bar'],['ARMA UTILIZADA','Arma utilizada','bar'],['LOCAL DO FATO','Local do fato','bar'],['VEÍCULO','Veículo','bar']]},
+resid:{title:'ROUBO A RESIDÊNCIA',match:['ROUBO A RESIDÊNCIA','ROUBO A RESIDENCIA','RESIDÊNCIA'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['TURNO','Turno','pie'],['BAIRRO','Bairro','bar'],['CIA','CIA','bar'],['MEIO TULIZADO','Meio utilizado','bar'],['OBS','Observações','bar']]},
+veiculo:{title:'ROUBO DE VEÍCULO',match:['ROUBO DE VEÍCULO','ROUBO DE VEICULO'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['Dia Semana','Dia da semana','bar'],['TURNO','Turno','bar'],['LOGRADOURO','Logradouro','bar'],['CIA','CIA','pie'],['BAIRRO','Bairro','bar'],['TIPO DE VEÍCULO','Tipo de veículo','bar'],['MARCA','Marca','bar'],['MODELO','Modelo','bar'],['BAIRRO2','Bairro da recuperação','bar']]},
+transp:{title:'ROUBO EM TRANSPORTE COLETIVO',match:['ROUBO TRANSPORTE COLETIVO','ROUBO EM TRANSPORTE COLETIVO','TRANSPORTE COLETIVO'],sheet:['DADOS'],charts:[['MÊS','Mês','bar'],['SEMANA','Dia da semana','bar'],['TURNO','Turno','pie'],['BAIRRO','Bairro','bar']]}
+};
+
+const $=id=>document.getElementById(id), norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase(), clean=v=>String(v??'').replace(/\u00a0/g,' ').trim();
+function blank(v){let x=clean(v).toUpperCase();return !x||x==='-'||x==='(VAZIO)';}
+function msg(t,err){$('msg').textContent=t;$('msg').className='notice'+(err?' error':'');}
+function loginMsg(t,err){$('loginMsg').textContent=t;$('loginMsg').className='notice'+(err?' error':'');}
+function destroy(){charts.forEach(c=>c.destroy());charts=[];}
+function showApp(){ $('login').classList.add('hidden');$('app').classList.remove('hidden');$('userBox').classList.remove('hidden');$('userEmail').textContent=session?.user?.email||'';$('roleBadge').textContent=role==='admin'?'Administrador':role==='operador'?'Operador':'Visualização';}
+function showLogin(){ $('login').classList.remove('hidden');$('app').classList.add('hidden');$('userBox').classList.add('hidden');}
+async function loadRole(){role='usuario';if(!session?.user?.id)return;const r=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();if(!r.error&&r.data?.role)role=r.data.role;}
+async function entrar(){const email=$('email').value.trim(),password=$('password').value;loginMsg('Entrando...');const r=await sb.auth.signInWithPassword({email,password});if(r.error){loginMsg(r.error.message,true);return;}session=r.data.session;await loadRole();showApp();}
+async function sair(){await sb.auth.signOut();session=null;destroy();showLogin();}
+
+function typeFromName(name){let n=norm(name);for(const [id,c] of Object.entries(CFG)){if(c.match.some(x=>n.includes(norm(x))))return id;}return '';}
+function findSheet(wb,c){for(const s of c.sheet){let x=wb.SheetNames.find(n=>norm(n)===norm(s));if(x)return x;}return wb.SheetNames.find(n=>/DADOS|BASE DE DADOS/.test(norm(n)))||wb.SheetNames[0];}
+function headerRow(rows,c){for(let i=0;i<Math.min(20,rows.length);i++){let h=rows[i].map(norm),score=c.charts.reduce((a,x)=>a+(h.includes(norm(x[0]))?1:0),0);if(score>=Math.min(2,c.charts.length))return i;}return 0;}
+function parse(buf,name,forced){
+let type=forced||typeFromName(name);if(!type)throw Error('Não foi possível identificar o tipo de ocorrência. Selecione-o manualmente.');
+let c=CFG[type],wb=XLSX.read(buf,{type:'array',cellDates:true,dense:false,cellStyles:false,cellFormula:false}),sheet=findSheet(wb,c),raw=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:'',raw:true}),hr=headerRow(raw,c),headers=(raw[hr]||[]).map(clean),rows=[];
+for(let i=hr+1;i<raw.length;i++){let a=raw[i]||[];if(a.every(blank))continue;let o={};headers.forEach((h,j)=>{if(h)o[h]=a[j]??''});rows.push(o);}
+if(!rows.length)throw Error('A aba de dados foi encontrada, mas não há registros.');
+return {type,c,sheet,rows};
 }
-const client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
-const roleNames={admin:'Administrador',operador:'Operador',visualizacao:'Visualização'};
-
-function showLogin(message){app.classList.add('hidden');loginScreen.classList.remove('hidden');loginMsg.textContent=message||'';}
-function showApp(session,role){loginScreen.classList.add('hidden');app.classList.remove('hidden');userEmail.textContent=session.user.email||'';userRole.textContent=roleNames[role]||role;}
-
-async function loadProfile(userId){
-const result=await client.from('profiles').select('id,nome,role').eq('id',userId).single();
-if(result.error)throw new Error('Perfil: '+result.error.message);
-if(!result.data||!result.data.role)throw new Error('Perfil não encontrado.');
-return result.data;
+function val(row,field){
+let target=norm(field),obj={};Object.entries(row).forEach(([k,v])=>obj[norm(k)]=v);
+if(target in obj)return obj[target];
+let k=Object.keys(obj).find(x=>x.includes(target)||target.includes(x));return k?obj[k]:'';
 }
-
-loginForm.addEventListener('submit',async function(event){
-event.preventDefault();loginMsg.textContent='Entrando...';
-const email=document.getElementById('email').value.trim();
-const password=document.getElementById('password').value;
-const result=await client.auth.signInWithPassword({email,password});
-if(result.error){loginMsg.textContent='Erro de login: '+result.error.message;return;}
-try{
-const profile=await loadProfile(result.data.user.id);
-showApp(result.data.session,profile.role);
-}catch(error){
-console.error(error);await client.auth.signOut();
-showLogin('Login realizado, mas não foi possível carregar o perfil: '+error.message);
+function fmt(v){if(v instanceof Date)return v.toLocaleDateString('pt-BR');return clean(v);}
+function count(rows,field){
+let m=new Map();rows.forEach(r=>{let v=fmt(val(r,field));if(blank(v))return;m.set(v,(m.get(v)||0)+1);});return [...m].map(([label,value])=>({label,value}));
 }
-});
+function ordered(field,a){
+let f=norm(field);
+if(f==='MES')return a.sort((x,y)=>MONTHS.indexOf(norm(x.label))-MONTHS.indexOf(norm(y.label)));
+if(f==='DIA'||f==='DIA SEMANA'||f==='SEMANA')return a.sort((x,y)=>DAYS.indexOf(norm(x.label))-DAYS.indexOf(norm(y.label)));
+return a.sort((x,y)=>y.value-x.value);
+}
+function top(a){return a.sort((x,y)=>y.value-x.value).slice(0,20);}
+function makeChart(card,data,type){
+let c=card.querySelector('canvas'),colors=['#0b2f55','#11877f','#2f6f9f','#7b5aa6','#b86b2c','#2d8c68','#8b3a62','#667085','#a06a00','#3d5a80'],pie=type==='pie';
+charts.push(new Chart(c,{type:pie?'doughnut':'bar',data:{labels:data.map(x=>x.label),datasets:[{label:'Ocorrências',data:data.map(x=>x.value),backgroundColor:pie?data.map((_,i)=>colors[i%colors.length]):colors[0],borderWidth:pie?1:0,borderRadius:pie?0:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:pie,position:'bottom'}},scales:pie?{}:{x:{ticks:{autoSkip:false,maxRotation:60}},y:{beginAtZero:true,ticks:{precision:0}}}}}));
+}
+function render(p){
+destroy();$('info').textContent=p.sheet+' • '+p.rows.length+' registros';
+let d=$('dashboard');d.innerHTML='<div class="titlebar"><div><h2>'+p.c.title+'</h2><p>Gráficos calculados diretamente do Excel anexado.</p></div><div class="help">Sem OneDrive • sem servidor de importação</div></div>';
+let st=document.createElement('div');st.className='stats';[['Registros',p.rows.length],['Gráficos',p.c.charts.length],['Arquivo','Excel'],['Processamento','Local']].forEach(x=>{let e=document.createElement('div');e.className='card stat';e.innerHTML='<small>'+x[0]+'</small><strong>'+x[1]+'</strong>';st.appendChild(e)});d.appendChild(st);
+let grid=document.createElement('div');grid.className='grid';d.appendChild(grid);
+p.c.charts.forEach(x=>{let data=count(p.rows,x[0]);if(!data.length)return;data=(norm(x[0])==='MES'||norm(x[0])==='DIA'||norm(x[0])==='DIA SEMANA'||norm(x[0])==='SEMANA'||norm(x[0])==='TURNO'||norm(x[0])==='CIA')?ordered(x[0],data):top(data);let card=document.createElement('div');card.className='card chart-card';card.innerHTML='<h3>'+x[1]+'</h3><p>Categorias sem informação foram desconsideradas.</p><div class="canvas"><canvas></canvas></div>';grid.appendChild(card);makeChart(card,data,x[2]);});
+if(!grid.children.length)msg('Nenhum campo configurado foi encontrado nesta planilha.',true);else msg('Arquivo lido com sucesso. Os gráficos foram recalculados.');}
+async function handle(file){
+if(role==='visualizacao'){msg('Perfil de visualização: anexar arquivos está bloqueado.',true);return;}
+if(!file)return;msg('Lendo o Excel no navegador...');
+try{let p=parse(await file.arrayBuffer(),file.name,$('tipo').value);render(p);}catch(e){console.error(e);msg('Erro ao ler o Excel: '+e.message,true);}
+}
+function clear(){destroy();$('dashboard').innerHTML='<div class="card" style="padding:28px"><h2>Dashboard inicial</h2><p class="help">Anexe um arquivo Excel para carregar o painel específico da ocorrência.</p></div>';$('info').textContent='Nenhum arquivo carregado.';$('msg').className='notice hidden';}
 
-logoutBtn.addEventListener('click',async function(){
-await client.auth.signOut();showLogin('');document.getElementById('password').value='';
-});
-
-client.auth.getSession().then(async function(result){
-const session=result.data.session;if(!session)return;
-try{const profile=await loadProfile(session.user.id);showApp(session,profile.role);}
-catch(error){console.error(error);await client.auth.signOut();showLogin('Sessão encontrada, mas o perfil não pôde ser carregado: '+error.message);}
-});
+Object.entries(CFG).forEach(([id,c])=>{let o=document.createElement('option');o.value=id;o.textContent=c.title;$('tipo').appendChild(o);});
+$('entrar').onclick=entrar;$('password').onkeydown=e=>{if(e.key==='Enter')entrar()};$('logout').onclick=sair;$('file').onchange=e=>handle(e.target.files[0]);$('limpar').onclick=clear;clear();
+sb.auth.getSession().then(async r=>{if(r.data.session){session=r.data.session;await loadRole();showApp();}});
 })();
 </script>
-</body>
-</html>
+</body></html>
