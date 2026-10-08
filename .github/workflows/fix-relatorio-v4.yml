@@ -1,4 +1,4 @@
-name: Fix Relatorio v5
+name: Fix Relatorio v6
 on:
   push:
     branches: [main]
@@ -10,9 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: python3 .github/patches/fix-report-v5.py
+      - run: python3 .github/patches/fix-report-v6.py
       - run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git diff --cached --quiet || (git commit -m 'Corrige abertura e dados do Relatorio de Inteligencia' && git push)
+          git diff --cached --quiet || (git commit -m 'Corrige definitivamente o botao do Relatorio de Inteligencia' && git push)
