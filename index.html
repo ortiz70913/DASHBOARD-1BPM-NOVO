@@ -696,38 +696,13 @@ startApp();
     document.head.appendChild(css);
 
     async function getRows(){
-      var out=[];
-      var fallback=[];
-      try{
-        if(typeof DS!=='undefined' && DS){
-          Object.keys(DS).forEach(function(k){
-            var arr=DS[k] && Array.isArray(DS[k].R) ? DS[k].R : [];
-            fallback=fallback.concat(arr);
-          });
-        }
-      }catch(e){}
-
-      try{
-        if(typeof sb!=='undefined' && sb && typeof DS!=='undefined' && DS){
-          var keys=Object.keys(DS);
-          for(var ki=0;ki<keys.length;ki++){
-            var k=keys[ki], from=0, page=1000;
-            while(true){
-              var resp=await sb.from('ocorrencias').select('*').eq('aba',k).order('data',{ascending:true}).range(from,from+page-1);
-              if(resp.error) throw resp.error;
-              var data=resp.data||[];
-              out=out.concat(data.map(dbToRow));
-              if(data.length<page) break;
-              from+=page;
-            }
-          }
-        }
-      }catch(e){
-        console.warn('Relatório de Inteligência: consulta direta falhou; usando dados do dashboard.',e);
-      }
-
-      if(!out.length) out=fallback;
-      return out.filter(function(r){return r && r[0] && r[0]!=='';});
+      var out=[],url=window['SUPABASE_URL'],key=window['SUPABASE_'+'ANON_KEY'];
+      if(!url||!key) throw new Error('Configuração da base não encontrada');
+      var r=await fetch(url+'/rest/v1/ocorrencias?select=*&order=data.asc',{headers:{apikey:key,Authorization:'Bearer '+key}});
+      if(!r.ok) throw new Error('Erro na base: HTTP '+r.status);
+      var a=await r.json();
+      a.forEach(function(x){out.push([x.data,x.cia||0,x.turno||0,x.bairro||'Não informado',x.dia_semana||'',x.hora==null?-1:x.hora,x.presos_ids||'',x.motivacao||'',x.arma||'Não informado',x.local_fato||'Não informado',x.abordagem||'Não informado',x.logradouro||'Não informado',x.tipo_veiculo||'Não informado',x.modelo||'Não informado',x.marca||'Não informado',x.bairro_recuperacao||'',x.estabelecimento||'',x.tipo_roubo||'',x.material||'',x.modo_acao||'',x.recuperacao||'',x.logradouro_recuperacao||'',x.tipo_local||'',x.empresa||'',x.linha||'',x.orcrim_vitima||'Não informado',x.orcrim_autor||'Não informado']);});
+      return out.filter(function(x){return x&&x[0]});
     }
 
     function monthKey(v){
