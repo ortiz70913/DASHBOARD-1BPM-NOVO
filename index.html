@@ -695,17 +695,39 @@ startApp();
     `;
     document.head.appendChild(css);
 
-    function getRows(){
+    async function getRows(){
+      var out=[];
+      var fallback=[];
       try{
-        var out=[];
         if(typeof DS!=='undefined' && DS){
           Object.keys(DS).forEach(function(k){
             var arr=DS[k] && Array.isArray(DS[k].R) ? DS[k].R : [];
-            out=out.concat(arr);
+            fallback=fallback.concat(arr);
           });
         }
-        return out.filter(function(r){return r && r[0] && r[0]!=='';});
-      }catch(e){ return []; }
+      }catch(e){}
+
+      try{
+        if(typeof sb!=='undefined' && sb && typeof DS!=='undefined' && DS){
+          var keys=Object.keys(DS);
+          for(var ki=0;ki<keys.length;ki++){
+            var k=keys[ki], from=0, page=1000;
+            while(true){
+              var resp=await sb.from('ocorrencias').select('*').eq('aba',k).order('data',{ascending:true}).range(from,from+page-1);
+              if(resp.error) throw resp.error;
+              var data=resp.data||[];
+              out=out.concat(data.map(dbToRow));
+              if(data.length<page) break;
+              from+=page;
+            }
+          }
+        }
+      }catch(e){
+        console.warn('Relatório de Inteligência: consulta direta falhou; usando dados do dashboard.',e);
+      }
+
+      if(!out.length) out=fallback;
+      return out.filter(function(r){return r && r[0] && r[0]!=='';});
     }
 
     function monthKey(v){
@@ -737,8 +759,8 @@ startApp();
       if(keys.indexOf(current)>=0) sel.value=current;
     }
 
-    function render(){
-      var all=getRows(), cia=document.getElementById('riCia').value, mes=document.getElementById('riMes').value;
+    async function render(){
+      var all=await getRows(), cia=document.getElementById('riCia').value, mes=document.getElementById('riMes').value;
       var q=document.getElementById('riBusca').value.trim().toLowerCase();
       rebuildMonths(all);
       var rows=all.filter(function(r){
@@ -785,6 +807,8 @@ startApp();
     function openReport(){
       panel.hidden=false;
       btn.setAttribute('aria-pressed','true');
+      document.getElementById('riResumo').innerHTML='<div class="ri-card"><b>...</b><span>Carregando dados do Supabase</span></div>';
+      document.getElementById('riConteudo').innerHTML='<div class="ri-box"><div class="ri-empty">Consultando a base de ocorrências...</div></div>';
       render();
     }
     function closeReport(){
