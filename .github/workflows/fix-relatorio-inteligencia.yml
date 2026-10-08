@@ -14,8 +14,7 @@ jobs:
       - name: Apply patch
         run: |
           if grep -q 'RELATORIO_INTELIGENCIA_PATCH_V2' index.html; then exit 0; fi
-          base64 -d .github/patches/relatorio.py.b64 > /tmp/patch.py
-          python3 /tmp/patch.py
+          python3 .github/patches/relatorio.py
       - name: Commit
         run: |
           git config user.name 'github-actions[bot]'
