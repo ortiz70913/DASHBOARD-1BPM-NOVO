@@ -1,0 +1,108 @@
+name: Corrigir Relatório de Inteligência definitivamente
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Remover implementações conflitantes e instalar uma única
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Remove todas as versões antigas do relatório que foram acumuladas.
+          marker = '<!-- RELATORIO_INTELIGENCIA_FINAL -->'
+          if marker in s:
+              s = s.split(marker, 1)[0]
+          s = re.sub(r'<script[^>]+src=["\']relatorio-inteligencia(?:-v2)?\.js["\'][^>]*></script>\s*', '', s, flags=re.I)
+
+          # Remove qualquer fechamento HTML que ficará antes do novo bloco.
+          s = re.sub(r'</body>\s*</html>\s*$', '', s, flags=re.I)
+
+          clean_report = r'''
+<!-- RELATORIO_INTELIGENCIA_UNICO -->
+<style>
+#riPanel{position:fixed;inset:55px 12px 12px;z-index:100000;background:#fff;color:#102033;border-radius:14px;box-shadow:0 20px 70px rgba(0,0,0,.45);overflow:auto;padding:18px;font-family:"Segoe UI",system-ui,sans-serif}
+#riPanel[hidden]{display:none!important}
+#riPanel .riHead{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:-18px;background:#fff;padding:4px 0 12px;z-index:5}
+#riPanel h2{margin:0;font-size:20px}#riPanel button{border:0;border-radius:8px;padding:9px 13px;background:#17395f;color:#fff;font-weight:700;cursor:pointer}
+#riPanel .riFilters{display:grid;grid-template-columns:180px 180px 1fr;gap:8px;margin:8px 0 12px}
+#riPanel select,#riPanel input{width:100%;padding:9px;border:1px solid #dfe5ec;border-radius:8px;background:#fff;color:#102033}
+#riPanel .riStatus{padding:10px 12px;border-radius:8px;background:#f4f6f9;margin-bottom:12px;font-weight:700}
+#riPanel .riKpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+#riPanel .riKpi{border:1px solid #dfe5ec;border-radius:8px;padding:10px;background:#f4f6f9}.riKpi b{display:block;font-size:20px}
+#riPanel table{width:100%;border-collapse:collapse;font-size:12px}#riPanel th,#riPanel td{padding:7px;border-bottom:1px solid #dfe5ec;text-align:left;white-space:nowrap}#riPanel th{position:sticky;top:58px;background:#fff;z-index:3}
+@media(max-width:800px){#riPanel .riFilters{grid-template-columns:1fr}#riPanel .riKpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+<script>
+(function(){
+  'use strict';
+  var rows=[];
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function cia(v){var s=String(v==null?'':v);if(/^1$|1ª|1a/i.test(s))return '1ª CIA';if(/^2$|2ª|2a/i.test(s))return '2ª CIA';if(/^3$|3ª|3a/i.test(s))return '3ª CIA';return s||'Sem CIA';}
+  function month(v){if(!v)return 'Sem data';var s=String(v).slice(0,7);return s.length===7?s.slice(5,7)+'/'+s.slice(0,4):String(v);}
+  function collect(){
+    var out=[];
+    if(typeof DS!=='object'||!DS)return out;
+    Object.keys(DS).forEach(function(k){(DS[k].R||[]).forEach(function(x){
+      if(!x||!x[0])return;
+      out.push({data:x[0],cia:x[1],hora:x[5],bairro:x[3]||'Não informado',dia:x[4]||'',local:x[9]||'Não informado',logradouro:x[11]||'Não informado',motivacao:x[7]||'',arma:x[8]||'',abordagem:x[10]||'',marca:x[14]||'',modelo:x[13]||'',tipo:x[12]||'',estabelecimento:x[16]||'',modo:x[19]||'',recuperacao:x[20]||'',orcrim1:x[25]||'',orcrim2:x[26]||''});
+    });});
+    return out;
+  }
+  function ensure(){
+    if(document.getElementById('riPanel'))return;
+    var p=document.createElement('section');p.id='riPanel';p.hidden=true;
+    p.innerHTML='<div class="riHead"><div><h2>📋 Relatório de Inteligência</h2><div>Dados carregados da mesma base do dashboard.</div></div><button id="riClose">Fechar</button></div><div class="riFilters"><select id="riCia"><option value="">Todas as CIAs</option><option>1ª CIA</option><option>2ª CIA</option><option>3ª CIA</option></select><select id="riMonth"><option value="">Todos os meses</option></select><input id="riSearch" placeholder="Pesquisar bairro, local, logradouro, motivação..."/></div><div class="riStatus" id="riStatus">Aguardando carregamento...</div><div class="riKpis" id="riKpis"></div><div id="riBody"></div>';
+    document.body.appendChild(p);
+    document.getElementById('riClose').onclick=function(){p.hidden=true;};
+    ['riCia','riMonth','riSearch'].forEach(function(id){document.getElementById(id).addEventListener('input',render);});
+  }
+  function render(){
+    var c=document.getElementById('riCia').value,m=document.getElementById('riMonth').value,q=document.getElementById('riSearch').value.toLowerCase().trim();
+    var f=rows.filter(function(r){return(!c||cia(r.cia)===c)&&(!m||month(r.data)===m)&&(!q||[r.data,cia(r.cia),r.bairro,r.local,r.logradouro,r.motivacao,r.arma,r.abordagem,r.marca,r.modelo,r.tipo,r.estabelecimento,r.modo,r.recuperacao,r.orcrim1,r.orcrim2].join(' ').toLowerCase().indexOf(q)>=0);});
+    var months={};rows.forEach(function(r){months[month(r.data)]=1;});var sel=document.getElementById('riMonth'),old=sel.value;sel.innerHTML='<option value="">Todos os meses</option>'+Object.keys(months).sort().reverse().map(function(x){return '<option>'+esc(x)+'</option>';}).join('');if(months[old])sel.value=old;
+    document.getElementById('riStatus').textContent='Registros disponíveis: '+rows.length+' | Exibindo: '+f.length;
+    document.getElementById('riKpis').innerHTML=['','1ª CIA','2ª CIA','3ª CIA'].map(function(x,i){return '<div class="riKpi">'+(x||'Total')+'<b>'+(x?f.filter(function(r){return cia(r.cia)===x;}).length:f.length)+'</b></div>';}).join('');
+    if(!f.length){document.getElementById('riBody').innerHTML='<p>Nenhuma ocorrência encontrada.</p>';return;}
+    f.sort(function(a,b){return String(b.data).localeCompare(String(a.data));});
+    document.getElementById('riBody').innerHTML='<div style="overflow:auto"><table><thead><tr><th>Data</th><th>CIA</th><th>Hora</th><th>Bairro</th><th>Local</th><th>Logradouro</th><th>Motivação</th><th>Arma</th><th>Abordagem</th><th>Veículo</th><th>Estabelecimento</th><th>Modo de ação</th><th>Recuperação</th><th>ORCRIM vítima</th><th>ORCRIM autor</th></tr></thead><tbody>'+f.map(function(r){return '<tr><td>'+esc(r.data)+'</td><td>'+esc(cia(r.cia))+'</td><td>'+esc(r.hora)+'</td><td>'+esc(r.bairro)+'</td><td>'+esc(r.local)+'</td><td>'+esc(r.logradouro)+'</td><td>'+esc(r.motivacao)+'</td><td>'+esc(r.arma)+'</td><td>'+esc(r.abordagem)+'</td><td>'+esc([r.marca,r.modelo,r.tipo].filter(Boolean).join(' / '))+'</td><td>'+esc(r.estabelecimento)+'</td><td>'+esc(r.modo)+'</td><td>'+esc(r.recuperacao)+'</td><td>'+esc(r.orcrim1)+'</td><td>'+esc(r.orcrim2)+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }
+  async function openReport(e){
+    if(e){e.preventDefault();e.stopPropagation();if(e.stopImmediatePropagation)e.stopImmediatePropagation();}
+    ensure();var p=document.getElementById('riPanel');p.hidden=false;document.getElementById('riStatus').textContent='Carregando dados...';
+    try{if(typeof loadData==='function')await loadData();rows=collect();if(!rows.length){document.getElementById('riStatus').textContent='Nenhum registro foi carregado da base.';document.getElementById('riKpis').innerHTML='';document.getElementById('riBody').innerHTML='';return;}render();}
+    catch(err){document.getElementById('riStatus').textContent='ERRO AO CARREGAR: '+(err&&err.message?err.message:err);document.getElementById('riBody').innerHTML='';}
+  }
+  function install(){
+    if(document.getElementById('riButton'))return;
+    var b=document.createElement('button');b.id='riButton';b.type='button';b.textContent='📋 Relatório de Inteligência';b.style.cssText='font:inherit;font-size:.9rem;border:1px solid rgba(255,255,255,.3);background:rgba(8,18,34,.7);color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer';b.onclick=openReport;
+    var host=document.getElementById('dsb')||document.querySelector('header')||document.body;host.appendChild(b);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){setTimeout(install,800);});else setTimeout(install,800);
+})();
+</script>
+<!-- /RELATORIO_INTELIGENCIA_UNICO -->
+'''
+          s += clean_report + '\n</body></html>\n'
+          p.write_text(s,encoding='utf-8')
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet || git commit -m 'Corrige relatório de inteligência sem conflitos'
+          git push
