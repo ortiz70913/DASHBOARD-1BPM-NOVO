@@ -1,0 +1,1 @@
+Deploy atualizado em 08/10/2026. Arquivo auxiliar para forçar uma nova publicação da branch main sem alterar a dashboard.
