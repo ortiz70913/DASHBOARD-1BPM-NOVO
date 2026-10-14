@@ -198,7 +198,17 @@ const DS={
 let cur='cvli',cia=0;
 const SUPABASE_URL=window.SUPABASE_URL||'COLE_A_URL_DO_SEU_PROJETO_SUPABASE_AQUI';
 const SUPABASE_ANON_KEY=window.SUPABASE_ANON_KEY||'COLE_A_CHAVE_ANON_PUBLICA_AQUI';
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let sb=null;
+try{
+  if(!window.supabase || typeof window.supabase.createClient!=='function') throw new Error('Biblioteca do Supabase não foi carregada pelo navegador.');
+  if(!SUPABASE_URL || SUPABASE_URL.includes('COLE_A_URL')) throw new Error('URL do Supabase não foi configurada.');
+  if(!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('COLE_A_CHAVE')) throw new Error('Chave pública do Supabase não foi configurada.');
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+}catch(initErr){
+  console.error('SUPABASE INIT:',initErr);
+  const bootMsg=()=>{const e=document.getElementById('loginErr');if(e)e.textContent='Erro ao iniciar o login: '+(initErr?.message||initErr)};
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootMsg,{once:true}); else bootMsg();
+}
 let session=null,role='';
 const ROLE_NAMES={admin:'Administrador',operador:'Operador',visualizacao:'Visualização'};
 function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='block';document.getElementById('userEmail').textContent=session?.user?.email||'';document.getElementById('userRole').textContent=ROLE_NAMES[role]||role;document.getElementById('up').style.display=['admin','operador'].includes(role)?'':'none';}
@@ -209,10 +219,10 @@ let signupMode=false;
 const authSubtitle=document.getElementById('authSubtitle'),authSubmit=document.getElementById('authSubmit'),toggleSignup=document.getElementById('toggleSignup'),nameWrap=document.getElementById('nameWrap'),confirmWrap=document.getElementById('confirmWrap');
 function setAuthMode(signup){signupMode=signup;nameWrap.style.display=signup?'':'none';confirmWrap.style.display=signup?'':'none';authSubmit.textContent=signup?'Criar cadastro':'Entrar';toggleSignup.textContent=signup?'Já tenho cadastro':'Criar cadastro';authSubtitle.textContent=signup?'Crie seu acesso ao Dashboard de Ocorrências 2026.':'Faça login para acessar o Dashboard de Ocorrências 2026.';document.getElementById('loginErr').textContent='';}
 toggleSignup.onclick=()=>setAuthMode(!signupMode);
-document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const err=document.getElementById('loginErr');err.className='err';const email=document.getElementById('email').value.trim();const password=document.getElementById('password').value;if(signupMode){const nome=document.getElementById('name').value.trim();const confirm=document.getElementById('passwordConfirm').value;if(password.length<6){err.textContent='A senha deve ter pelo menos 6 caracteres.';return}if(password!==confirm){err.textContent='As senhas não conferem.';return}if(!nome){err.textContent='Informe seu nome.';return}err.textContent='Criando cadastro...';const {data,error}=await sb.auth.signUp({email,password,options:{data:{nome}}});if(error){err.textContent=error.message;return}if(data.session){session=data.session;try{await loadRole();showApp();await loadData();sw('cvli')}catch(x){await sb.auth.signOut();showLogin('Cadastro criado, mas o perfil ainda não pôde ser carregado.')}}else{err.className='err ok';err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';setAuthMode(false);document.getElementById('email').value=email;document.getElementById('password').value='';}return}
+document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const err=document.getElementById('loginErr');err.className='err';if(!sb){err.textContent='O serviço de login não foi iniciado. Atualize a página e tente novamente.';return}const email=document.getElementById('email').value.trim();const password=document.getElementById('password').value;if(signupMode){const nome=document.getElementById('name').value.trim();const confirm=document.getElementById('passwordConfirm').value;if(password.length<6){err.textContent='A senha deve ter pelo menos 6 caracteres.';return}if(password!==confirm){err.textContent='As senhas não conferem.';return}if(!nome){err.textContent='Informe seu nome.';return}err.textContent='Criando cadastro...';const {data,error}=await sb.auth.signUp({email,password,options:{data:{nome}}});if(error){err.textContent=error.message;return}if(data.session){session=data.session;try{await loadRole();showApp();await loadData();sw('cvli')}catch(x){await sb.auth.signOut();showLogin('Cadastro criado, mas o perfil ainda não pôde ser carregado.')}}else{err.className='err ok';err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';setAuthMode(false);document.getElementById('email').value=email;document.getElementById('password').value='';}return}
 err.textContent='Entrando...';const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){err.textContent=error.message;return}session=data.session;try{await loadRole()}catch(x){console.error('PERFIL:',x);await sb.auth.signOut();showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));return}try{showApp();await loadData();sw('cvli')}catch(x){console.error('DADOS:',x);showLogin('Login realizado, mas houve erro ao carregar as ocorrências: '+(x?.message||x));}};
 document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();session=null;role='';showLogin();};
-sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});
+if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});
 const $=id=>document.getElementById(id);
 const pct=(a,b)=>b?Math.round(a/b*100):0;
 const fmt=s=>s.split('-').reverse().join('/');
@@ -474,8 +484,8 @@ function render(){
  $('kpis').innerHTML=ds.kp.map(x=>K[x]).join('');
  ['cia','mes','dia','turno','hora','motiv','bairro','arma','local','abord','tipo','marca','modelo','logr','brec','estab','tipoc','mat','modo','recup','lrec','tipol','empresa','linha','orv','ora'].forEach(x=>$('p-'+x).style.display=ds.ch.includes(x)?'':'none');
  ['dia','turno','orv','ora'].forEach(x=>$('p-'+x).classList.toggle('q',ds.ch.includes('orv')));
- const prevD=prevBase.filter(r=>!cia||r[1]==cia);renderPainelInteligencia(d, typeof prevD!=='undefined'?prevD:[]);bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));
  const prevBase=R.filter(r=>r[0]>=prev.start&&r[0]<=prev.end&&(!cia||r[1]==cia));
+ const prevD=prevBase.filter(r=>!cia||r[1]==cia);renderPainelInteligencia(d,prevD);bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));
  const prevCnt=(f,k)=>{const q=Array(k).fill(0);prevBase.forEach(r=>{const i=f(r);if(i>=0&&i<k)q[i]++});return q};
  const prevMesAll=prevCnt(r=>+r[0].slice(5,7)-1,12);
  const prevMes=prevMesAll.slice(m0,m1+1),prevDia=prevCnt(r=>DIA.indexOf(r[4]),7),prevTur=prevCnt(r=>r[2]-1,4),prevHor=prevCnt(r=>r[5],24);
@@ -669,8 +679,7 @@ function dbToRow(r){return [r.data,r.cia??0,r.turno??0,r.bairro||'Não informado
 function dayName(date){const d=new Date(date+'T00:00:00Z');return DIA[d.getUTCDay()]||''}
 Object.keys(DS).forEach(k=>DS[k].label='Banco de dados · 0 ocorrências');
 populateWeeks();
-sw('cvli');
-startApp();
+if(sb)startApp();
 
 </script></div>
 <div aria-label="Evolução dos grupos criminais" class="phase4-view" id="phase4View">
