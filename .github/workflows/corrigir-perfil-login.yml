@@ -15,26 +15,38 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
 
-          old="""async function loadRole(){\n    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).single();\n    if(error)throw error;\n    role=data.role;\n  }"""
-          new="""async function loadRole(){\n    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();\n    if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);\n    if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');\n    if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');\n    role=data.role;\n  }"""
-          if old not in s:
-              raise SystemExit('loadRole não encontrado')
-          s=s.replace(old,new,1)
+          start=s.find('async function loadRole()')
+          finish=s.find('async function startApp()',start)
+          if start < 0 or finish < 0: raise SystemExit('funções de login não localizadas')
+          new_role="""async function loadRole(){
+    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+    if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);
+    if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');
+    if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');
+    role=data.role;
+  }
 
-          old="""  }catch(e){console.error(e);showLogin('Não foi possível carregar seu perfil.');}}"""
-          new="""  }catch(e){console.error('START APP:',e);showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));}}"""
-          if old not in s:
-              raise SystemExit('catch do startApp não encontrado')
-          s=s.replace(old,new,1)
+  """
+          s=s[:start]+new_role+s[finish:]
 
-          old="""  if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"""
-          new="""  if(sb)sb.auth.onAuthStateChange((_event,s)=>{\n    session=s;\n    if(!s){\n      role='';\n      const e=document.getElementById('loginErr');\n      if(e && !e.textContent)showLogin();\n    }\n  });"""
-          if old not in s:
-              raise SystemExit('listener de autenticação não encontrado')
-          s=s.replace(old,new,1)
+          s=s.replace("showLogin('Não foi possível carregar seu perfil.');","showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));",1)
+          s=s.replace("await sb.auth.signOut();\n      showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));","showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));",1)
+
+          old="if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+          if old in s:
+              new="""if(sb)sb.auth.onAuthStateChange((_event,s)=>{
+    session=s;
+    if(!s){
+      role='';
+      const e=document.getElementById('loginErr');
+      if(e && !e.textContent)showLogin();
+    }
+  });"""
+              s=s.replace(old,new,1)
 
           p.write_text(s,encoding='utf-8')
           print('Correções aplicadas')
@@ -44,5 +56,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Corrigir erro silencioso no perfil do login' || exit 0
+          git commit -m 'Corrigir login e perfil definitivamente' || exit 0
           git push
