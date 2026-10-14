@@ -1,0 +1,45 @@
+name: Forcar correcoes do login
+on:
+  push:
+    paths:
+      - '.github/workflows/forcar-correcoes-login.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corrigir login e erro de renderizacao
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          # Diagnostico independente do script principal: confirma imediatamente que o clique chegou ao botao.
+          marker='<div class="err" id="loginErr"></div>'
+          diagnostic='''<div class="err" id="loginErr"></div><script>document.addEventListener('DOMContentLoaded',function(){var b=document.getElementById('authSubmit'),e=document.getElementById('loginErr');if(b&&e)b.addEventListener('click',function(){if(!e.textContent)e.textContent='Clique recebido. Iniciando login...';},true);});</script>'''
+          if marker in s and 'Clique recebido. Iniciando login...' not in s:
+              s=s.replace(marker,diagnostic,1)
+
+          # Evita erro posterior do dashboard por variaveis inexistentes.
+          old="pres.size+'</b><small>em '+occ+' ocorrências</small></div>'"
+          new="new Set(d.flatMap(r=>Array.isArray(r[6])?r[6]:[])).size+'</b><small>em '+d.filter(r=>Array.isArray(r[6])&&r[6].length).length+' ocorrências</small></div>'"
+          if old in s:
+              s=s.replace(old,new,1)
+          else:
+              s=s.replace("pres.size+'</b><small>em '+occ+' ocorrências</small></div>'",new,1)
+
+          p.write_text(s,encoding='utf-8')
+          print('Correcoes aplicadas')
+      - name: Publicar
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corrigir clique do login e renderizacao' || exit 0
+          git push
