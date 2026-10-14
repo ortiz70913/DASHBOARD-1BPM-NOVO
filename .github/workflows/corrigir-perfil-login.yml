@@ -1,0 +1,48 @@
+name: Corrigir perfil e mensagem do login
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-perfil-login.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corrigir tratamento do perfil e erro de login
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old="""async function loadRole(){\n    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).single();\n    if(error)throw error;\n    role=data.role;\n  }"""
+          new="""async function loadRole(){\n    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();\n    if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);\n    if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');\n    if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');\n    role=data.role;\n  }"""
+          if old not in s:
+              raise SystemExit('loadRole não encontrado')
+          s=s.replace(old,new,1)
+
+          old="""  }catch(e){console.error(e);showLogin('Não foi possível carregar seu perfil.');}}"""
+          new="""  }catch(e){console.error('START APP:',e);showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));}}"""
+          if old not in s:
+              raise SystemExit('catch do startApp não encontrado')
+          s=s.replace(old,new,1)
+
+          old="""  if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"""
+          new="""  if(sb)sb.auth.onAuthStateChange((_event,s)=>{\n    session=s;\n    if(!s){\n      role='';\n      const e=document.getElementById('loginErr');\n      if(e && !e.textContent)showLogin();\n    }\n  });"""
+          if old not in s:
+              raise SystemExit('listener de autenticação não encontrado')
+          s=s.replace(old,new,1)
+
+          p.write_text(s,encoding='utf-8')
+          print('Correções aplicadas')
+      - name: Publicar
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corrigir erro silencioso no perfil do login' || exit 0
+          git push
