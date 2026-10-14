@@ -1,0 +1,42 @@
+name: Corrigir login do dashboard
+
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-login.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Corrigir erro de sintaxe do login
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          bad = "err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';"
+          good = "err.textContent='Cadastro criado com sucesso.\\nVerifique seu e-mail para confirmar a conta e depois faça login.';"
+          if bad not in s:
+              raise SystemExit('Trecho problemático não encontrado; nenhuma alteração realizada.')
+          s = s.replace(bad, good, 1)
+          p.write_text(s, encoding='utf-8')
+          print('Erro de sintaxe do login corrigido.')
+
+      - name: Validar e publicar
+        shell: bash
+        run: |
+          grep -q "Cadastro criado com sucesso." index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m 'Corrigir erro de sintaxe no login'
+          git push
