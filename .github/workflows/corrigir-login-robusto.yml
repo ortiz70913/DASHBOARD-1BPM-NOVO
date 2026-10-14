@@ -1,0 +1,65 @@
+name: Corrigir inicialização do login
+on:
+  push:
+    paths:
+      - '.github/workflows/corrigir-login-robusto.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corrigir inicialização e erro de render
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+
+          old="const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);"
+          new="""let sb=null;
+          try{
+            if(!window.supabase || typeof window.supabase.createClient!=='function') throw new Error('Biblioteca do Supabase não foi carregada pelo navegador.');
+            if(!SUPABASE_URL || SUPABASE_URL.includes('COLE_A_URL')) throw new Error('URL do Supabase não foi configurada.');
+            if(!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.includes('COLE_A_CHAVE')) throw new Error('Chave pública do Supabase não foi configurada.');
+            sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+          }catch(initErr){
+            console.error('SUPABASE INIT:',initErr);
+            const bootMsg=()=>{const e=document.getElementById('loginErr');if(e)e.textContent='Erro ao iniciar o login: '+(initErr?.message||initErr)};
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootMsg,{once:true}); else bootMsg();
+          }"""
+          if old not in s: raise SystemExit('createClient não encontrado')
+          s=s.replace(old,new,1)
+
+          old2="document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const err=document.getElementById('loginErr');err.className='err';const email="
+          new2="document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const err=document.getElementById('loginErr');err.className='err';if(!sb){err.textContent='O serviço de login não foi iniciado. Atualize a página e tente novamente.';return}const email="
+          if old2 not in s: raise SystemExit('handler de login não encontrado')
+          s=s.replace(old2,new2,1)
+
+          old3="sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+          new3="if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+          if old3 not in s: raise SystemExit('onAuthStateChange não encontrado')
+          s=s.replace(old3,new3,1)
+
+          old4="const prevD=prevBase.filter(r=>!cia||r[1]==cia);renderPainelInteligencia(d, typeof prevD!=='undefined'?prevD:[]);bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));\n const prevBase=R.filter(r=>r[0]>=prev.start&&r[0]<=prev.end&&(!cia||r[1]==cia));"
+          new4="const prevBase=R.filter(r=>r[0]>=prev.start&&r[0]<=prev.end&&(!cia||r[1]==cia));\n const prevD=prevBase.filter(r=>!cia||r[1]==cia);renderPainelInteligencia(d,prevD);bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));"
+          if old4 not in s: raise SystemExit('ordem prevBase/prevD não encontrada')
+          s=s.replace(old4,new4,1)
+
+          old5="Object.keys(DS).forEach(k=>DS[k].label='Banco de dados · 0 ocorrências');\npopulateWeeks();\nsw('cvli');\nstartApp();"
+          new5="Object.keys(DS).forEach(k=>DS[k].label='Banco de dados · 0 ocorrências');\npopulateWeeks();\nif(sb)startApp();"
+          if old5 not in s: raise SystemExit('bootstrap final não encontrado')
+          s=s.replace(old5,new5,1)
+
+          p.write_text(s,encoding='utf-8')
+          print('Correções aplicadas')
+      - name: Publicar
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corrigir inicialização do login e renderização' || exit 0
+          git push
