@@ -1,0 +1,88 @@
+name: Melhorar rankings comparativos
+
+on:
+  push:
+    paths:
+      - '.github/workflows/melhorar-rankings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Atualizar rankings com variação do período anterior
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_bars = """function bars(el,list,tot){const mx=list[0]?.[1]||1;const t=tot||list.reduce((a,b)=>a+b[1],0)||1;el.innerHTML='<div class=\"bars\">'+list.map((x,i)=>{const n=Number(x[1])||0,pctv=n/t*100;return '<div class=\"bar\" title=\"'+esc(String(x[0]??''))+': '+n+' ocorrência(s)\"><b><span class=\"ranknum\">'+(i+1)+'º</span> '+esc(String(x[0]??''))+'</b><div><i style=\"width:'+Math.max(n?2:0,n/mx*100)+'%\"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div></div>'}).join('')+'</div>'}"""
+
+          if old_bars not in s:
+              # Tenta localizar a função atual mesmo que tenha pequenas diferenças de formatação.
+              pat = re.compile(r"function bars\(el,list,tot\)\{.*?\n?\}", re.S)
+              m = pat.search(s)
+              if not m:
+                  raise SystemExit('Função bars não encontrada; nenhuma alteração realizada.')
+              old_bars = m.group(0)
+
+          new_bars = r'''function bars(el,list,tot,prevList){const mx=list[0]?.[1]||1;const t=tot||list.reduce((a,b)=>a+b[1],0)||1;const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));el.innerHTML='<div class="bars">'+list.map((x,i)=>{const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList),old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null,icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';return '<div class="bar" title="'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'"><b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b><div><i style="width:'+Math.max(n?2:0,n/mx*100)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+(hasPrev?'<small class="bardelta '+d.cls+'">'+delta+'</small>':'')+'</div>'}).join('')+'</div>'}'''
+
+          if old_bars != new_bars:
+              s = s.replace(old_bars, new_bars, 1)
+
+          css_anchor = '.coldelta{font-size:.58rem;font-weight:800;line-height:1;min-height:11px;white-space:nowrap}'
+          css_add = '.bardelta{font-size:.58rem;font-weight:800;line-height:1;min-height:11px;white-space:nowrap;margin:2px 0 0 1.8rem}.bardelta.up{color:#a15c00}.bardelta.down{color:#177245}.bardelta.flat{color:var(--mut)}'
+          if css_add not in s:
+              if css_anchor in s:
+                  s = s.replace(css_anchor, css_anchor + css_add, 1)
+              else:
+                  s = s.replace('</style>', css_add + '</style>', 1)
+
+          # Acrescenta os comparativos aos principais rankings sem depender da posição do ranking anterior.
+          replacements = {
+            "bars($('cia'),byCia,base.length);": "bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));",
+            "bars($('motiv'),rank(d,r=>motl(r[7])),n);": "bars($('motiv'),rank(d,r=>motl(r[7])),n,rank(prevD,r=>motl(r[7])));",
+            "bars($('bairro'),top.slice(0,10),n);": "bars($('bairro'),top.slice(0,10),n,rank(prevD,r=>r[3]||'Não informado').slice(0,10));",
+          }
+          for a,b in replacements.items():
+              if a in s:
+                  s=s.replace(a,b,1)
+
+          old_loop = "[['arma',8],['local',9],['abord',10],['tipo',12],['marca',14],['modelo',13],['logr',11],['estab',16],['tipoc',17],['mat',18],['modo',19],['recup',20],['tipol',22],['empresa',23],['linha',24],['orv',25],['ora',26]].forEach(([id,ix])=>bars($(id),rank(d,r=>r[ix]||'Não informado').slice(0,10),n));"
+          new_loop = "[['arma',8],['local',9],['abord',10],['tipo',12],['marca',14],['modelo',13],['logr',11],['estab',16],['tipoc',17],['mat',18],['modo',19],['recup',20],['tipol',22],['empresa',23],['linha',24],['orv',25],['ora',26]].forEach(([id,ix])=>bars($(id),rank(d,r=>r[ix]||'Não informado').slice(0,10),n,rank(prevD,r=>r[ix]||'Não informado').slice(0,10)));"
+          if old_loop in s:
+              s=s.replace(old_loop,new_loop,1)
+
+          # Rankings específicos de recuperação, quando presentes.
+          for old,new in [
+              ("bars($('rec'),rank(d.filter(r=>r[20]),r=>r[20]).slice(0,10),n);", "bars($('rec'),rank(d.filter(r=>r[20]),r=>r[20]).slice(0,10),n,rank(prevD.filter(r=>r[20]),r=>r[20]).slice(0,10));"),
+              ("bars($('rl'),rank(d.filter(r=>r[21]),r=>r[21]).slice(0,10),n);", "bars($('rl'),rank(d.filter(r=>r[21]),r=>r[21]).slice(0,10),n,rank(prevD.filter(r=>r[21]),r=>r[21]).slice(0,10));"),
+          ]:
+              if old in s:
+                  s=s.replace(old,new,1)
+
+          # Se o período anterior ainda não estiver nomeado no escopo, cria o alias imediatamente antes dos rankings.
+          marker = "bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));"
+          if marker in s and "const prevD=prevBase.filter" not in s:
+              s=s.replace(marker, "const prevD=prevBase.filter(r=>!cia||r[1]==cia);"+marker, 1)
+
+          p.write_text(s, encoding='utf-8')
+          print('index.html atualizado com rankings comparativos.')
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
+          git commit -m 'Melhorar rankings com comparação de período anterior'
+          git push
