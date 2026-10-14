@@ -20,14 +20,15 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          bad = "err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';"
+          pattern = r"err\.textContent='Cadastro criado com sucesso\.\s*Verifique seu e-mail para confirmar a conta e depois faça login\.';"
           good = "err.textContent='Cadastro criado com sucesso.\\nVerifique seu e-mail para confirmar a conta e depois faça login.';"
-          if bad not in s:
+          s2, n = re.subn(pattern, good, s, count=1)
+          if n != 1:
               raise SystemExit('Trecho problemático não encontrado; nenhuma alteração realizada.')
-          s = s.replace(bad, good, 1)
-          p.write_text(s, encoding='utf-8')
+          p.write_text(s2, encoding='utf-8')
           print('Erro de sintaxe do login corrigido.')
 
       - name: Validar e publicar
