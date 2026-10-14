@@ -182,16 +182,16 @@ main{max-width:none;margin:0;padding:18px 14px 32px}
 <script>
 const MES=["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"],DIA=["DOM","SEG","TER","QUA","QUI","SEX","SÁB"];
 const DS={
-  fios:{nome:'FURTO DE FIOS E CABOS',aba:'FURTO DE FIOS E CABOS',R:[],kp:['cia','n','bairro','mes','presos'],ch:['cia','mes','dia','turno','hora','bairro']},
-  cvli:{nome:'CRIMES VIOLENTOS LETAIS E INTENCIONAIS',aba:'CRIMES VIOLENTOS LETAIS E INTENCIONAIS',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','motiv','orv','ora']},
-  pedestre:{nome:'ROUBO A PEDESTRE',aba:'ROUBO A PEDESTRE',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','arma','local','abord']},
-  veiculo:{nome:'ROUBO DE VEÍCULO',aba:'ROUBO DE VEÍCULO',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','local','tipo','marca','modelo','logr','brec','lrec']},
-  estab:{nome:'ROUBO A ESTABELECIMENTO COMERCIAL',aba:'ROUBO A ESTABELECIMENTO COMERCIAL',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','arma','local','abord','logr','estab','tipoc'],abt:'Meio utilizado / modo de abordagem'},
-  furtoveic:{nome:'FURTO EM VEÍCULO',aba:'FURTO EM VEÍCULO',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','mat','modo','local','marca','modelo','logr']},
-  furtoveiculo:{nome:'FURTO DE VEÍCULO',aba:'FURTO DE VEÍCULO',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','tipo','marca','modelo','recup','logr','lrec']},
-  arromb:{nome:'FURTO ARROMBAMENTO',aba:'FURTO ARROMBAMENTO',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','tipol','logr']},
-  resid:{nome:'ROUBO A RESIDÊNCIA',aba:'ROUBO A RESIDÊNCIA',R:[],kp:['n','presos','bairro','mes'],ch:['cia','mes','dia','turno','hora','bairro','logr']},
-  transp:{nome:'ROUBO EM TRANSPORTE COLETIVO',aba:'ROUBO EM TRANSPORTE COLETIVO',R:[],kp:['n','presos','bairro','mes'],ch:['mes','dia','turno','hora','bairro','arma','empresa','linha','logr']}
+  fios:{nome:'FURTO DE FIOS E CABOS',aba:'FURTO DE FIOS E CABOS',R:[],kp:['cia','n','bairro','hora','mes','presos'],ch:['cia','mes','dia','turno','hora','bairro']},
+  cvli:{nome:'CRIMES VIOLENTOS LETAIS E INTENCIONAIS',aba:'CRIMES VIOLENTOS LETAIS E INTENCIONAIS',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','motiv','orv','ora']},
+  pedestre:{nome:'ROUBO A PEDESTRE',aba:'ROUBO A PEDESTRE',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','arma','local','abord']},
+  veiculo:{nome:'ROUBO DE VEÍCULO',aba:'ROUBO DE VEÍCULO',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','local','tipo','marca','modelo','logr','brec','lrec']},
+  estab:{nome:'ROUBO A ESTABELECIMENTO COMERCIAL',aba:'ROUBO A ESTABELECIMENTO COMERCIAL',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','arma','local','abord','logr','estab','tipoc'],abt:'Meio utilizado / modo de abordagem'},
+  furtoveic:{nome:'FURTO EM VEÍCULO',aba:'FURTO EM VEÍCULO',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','mat','modo','local','marca','modelo','logr']},
+  furtoveiculo:{nome:'FURTO DE VEÍCULO',aba:'FURTO DE VEÍCULO',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','tipo','marca','modelo','recup','logr','lrec']},
+  arromb:{nome:'FURTO ARROMBAMENTO',aba:'FURTO ARROMBAMENTO',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','tipol','logr']},
+  resid:{nome:'ROUBO A RESIDÊNCIA',aba:'ROUBO A RESIDÊNCIA',R:[],kp:['n','presos','bairro','hora','mes'],ch:['cia','mes','dia','turno','hora','bairro','logr']},
+  transp:{nome:'ROUBO EM TRANSPORTE COLETIVO',aba:'ROUBO EM TRANSPORTE COLETIVO',R:[],kp:['n','presos','bairro','hora','mes'],ch:['mes','dia','turno','hora','bairro','arma','empresa','linha','logr']}
 };
 let cur='cvli',cia=0;
 const SUPABASE_URL=window.SUPABASE_URL||'COLE_A_URL_DO_SEU_PROJETO_SUPABASE_AQUI';
@@ -469,7 +469,8 @@ function render(){
   n:'<div class="k'+(ds.kp[0]=='n'?' hl':'')+'"><span>Total de ocorrências'+(cia?' na '+cia+'ª CIA':'')+'</span><b>'+n+'</b><small>no período selecionado</small>'+kdelta(n,prevN)+'</div>',
   presos:'<div class="k"><span>Presos/suspeitos</span><b>'+pres.size+'</b><small>em '+occ+' ocorrências</small></div>',
   bairro:'<div class="k"><span>Bairro mais afetado</span><b>'+topBName+'</b><small>'+topBCount+' ocorrências</small>'+topKDelta+'</div>',
-  mes:'<div class="k"><span>Mês mais crítico</span><b>'+(n?MES[m0+pm]:'-')+'</b><small>'+(n?mes[pm]:0)+' ocorrências</small>'+kdelta(n?mes[pm]:0,(m0+pm)>0?cnt(r=>+r[0].slice(5,7)-1,12)[m0+pm-1]:0,'mês anterior')+'</div>'};
+  mes:'<div class="k"><span>Mês mais crítico</span><b>'+(n?MES[m0+pm]:'-')+'</b><small>'+(n?mes[pm]:0)+' ocorrências</small>'+kdelta(n?mes[pm]:0,(m0+pm)>0?cnt(r=>+r[0].slice(5,7)-1,12)[m0+pm-1]:0,'mês anterior')+'</div>',
+  hora:'<div class="k"><span>Horário crítico</span><b>'+hourNow[0]+'</b><small>'+hourNow[1]+' ocorrências no período</small>'+kdelta(hourNow[1],hourPrev[1])+'</div>'};
  $('kpis').innerHTML=ds.kp.map(x=>K[x]).join('');
  ['cia','mes','dia','turno','hora','motiv','bairro','arma','local','abord','tipo','marca','modelo','logr','brec','estab','tipoc','mat','modo','recup','lrec','tipol','empresa','linha','orv','ora'].forEach(x=>$('p-'+x).style.display=ds.ch.includes(x)?'':'none');
  ['dia','turno','orv','ora'].forEach(x=>$('p-'+x).classList.toggle('q',ds.ch.includes('orv')));
