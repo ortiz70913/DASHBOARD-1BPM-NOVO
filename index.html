@@ -56,7 +56,7 @@ main{max-width:none;margin:0;padding:18px 14px 32px}
 .col i{display:block;width:min(100%,34px);background:linear-gradient(to top,var(--acc),var(--hi));border-radius:5px 5px 0 0;min-height:0;transition:height .25s ease,filter .2s ease}
 .col:hover i{filter:brightness(1.12)}
 .col.top i{background:var(--hi);box-shadow:0 0 0 2px color-mix(in srgb,var(--hi) 18%,transparent)}
-.col em{font-style:normal;font-size:.72rem;margin-bottom:3px;color:var(--ink);font-weight:700}\n.coldelta{font-size:.58rem;font-weight:800;line-height:1;min-height:11px;white-space:nowrap}
+.col em{font-style:normal;font-size:.72rem;margin-bottom:3px;color:var(--ink);font-weight:700}\n.coldelta{font-size:.58rem;font-weight:800;line-height:1;min-height:11px;white-space:nowrap}.bardelta{font-size:.58rem;font-weight:800;line-height:1;min-height:11px;white-space:nowrap;margin:2px 0 0 1.8rem}.bardelta.up{color:#a15c00}.bardelta.down{color:#177245}.bardelta.flat{color:var(--mut)}
 .coldelta.up{color:#a15c00}.coldelta.down{color:#177245}.coldelta.flat{color:var(--mut)}
 
 .lab{display:flex;gap:7px;margin-top:6px}
@@ -275,16 +275,7 @@ function cols(el,labels,vals,prevVals){
      '</div>';
  }).join('')+'</div><div class="lab">'+labels.map(l=>'<span title="'+esc(String(l??''))+'">'+l+'</span>').join('')+'</div>';
 }
-function bars(el,list,tot){
- const mx=list.length?Math.max(list[0][1],1):1;
- el.innerHTML=list.map((t,i)=>{
-   const n=Number(t[1])||0,pctv=tot?(n/tot*100):0;
-   const width=Math.max(n?2:0,n/mx*100);
-   return '<div class="hb'+(i===0&&n?' top':'')+'">'+
-     '<span class="hbname" title="'+esc(String(t[0]??''))+'"><i class="ranknum">'+(i+1)+'º</i>'+esc(String(t[0]??''))+'</span>'+
-     '<div title="'+n+' ocorrência(s)"><i style="width:'+width+'%"></i></div>'+
-     '<b>'+n+' <u>'+pctv.toFixed(1).replace('.',',')+'%</u></b></div>';
- }).join('');
+function bars(el,list,tot,prevList){const mx=list[0]?.[1]||1;const t=tot||list.reduce((a,b)=>a+b[1],0)||1;const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));el.innerHTML='<div class="bars">'+list.map((x,i)=>{const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList),old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null,icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';return '<div class="bar" title="'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'"><b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b><div><i style="width:'+Math.max(n?2:0,n/mx*100)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+(hasPrev?'<small class="bardelta '+d.cls+'">'+delta+'</small>':'')+'</div>'}).join('')+'</div>'}).join('');
 }
 const rank=(d,f)=>{const o={};d.forEach(r=>{const k=f(r);o[k]=(o[k]||0)+1});return Object.entries(o).sort((x,y)=>y[1]-x[1])};
 
@@ -483,7 +474,7 @@ function render(){
  $('kpis').innerHTML=ds.kp.map(x=>K[x]).join('');
  ['cia','mes','dia','turno','hora','motiv','bairro','arma','local','abord','tipo','marca','modelo','logr','brec','estab','tipoc','mat','modo','recup','lrec','tipol','empresa','linha','orv','ora'].forEach(x=>$('p-'+x).style.display=ds.ch.includes(x)?'':'none');
  ['dia','turno','orv','ora'].forEach(x=>$('p-'+x).classList.toggle('q',ds.ch.includes('orv')));
- bars($('cia'),byCia,base.length);
+ const prevD=prevBase.filter(r=>!cia||r[1]==cia);bars($('cia'),byCia,base.length,rank(prevBase,r=>r[1]+'ª CIA'));
  const prevBase=R.filter(r=>r[0]>=prev.start&&r[0]<=prev.end&&(!cia||r[1]==cia));
  const prevCnt=(f,k)=>{const q=Array(k).fill(0);prevBase.forEach(r=>{const i=f(r);if(i>=0&&i<k)q[i]++});return q};
  const prevMesAll=prevCnt(r=>+r[0].slice(5,7)-1,12);
@@ -491,9 +482,9 @@ function render(){
  cols($('mes'),MES.slice(m0,m1+1),mes,prevMes);cols($('dia'),DIA,dia,prevDia);cols($('turno'),["1º","2º","3º","4º"],tur,prevTur);
  cols($('hora'),hor.map((_,i)=>i%2?'':i+'h'),hor,prevHor);
  $('hnote').textContent=d.filter(r=>r[5]<0).length+' de '+n+' registros estão sem horário na planilha e não entram neste gráfico.';
- bars($('motiv'),rank(d,r=>motl(r[7])),n);
- bars($('bairro'),top.slice(0,10),n);
- [['arma',8],['local',9],['abord',10],['tipo',12],['marca',14],['modelo',13],['logr',11],['estab',16],['tipoc',17],['mat',18],['modo',19],['recup',20],['tipol',22],['empresa',23],['linha',24],['orv',25],['ora',26]].forEach(([id,ix])=>bars($(id),rank(d,r=>r[ix]||'Não informado').slice(0,10),n));
+ bars($('motiv'),rank(d,r=>motl(r[7])),n,rank(prevD,r=>motl(r[7])));
+ bars($('bairro'),top.slice(0,10),n,rank(prevD,r=>r[3]||'Não informado').slice(0,10));
+ [['arma',8],['local',9],['abord',10],['tipo',12],['marca',14],['modelo',13],['logr',11],['estab',16],['tipoc',17],['mat',18],['modo',19],['recup',20],['tipol',22],['empresa',23],['linha',24],['orv',25],['ora',26]].forEach(([id,ix])=>bars($(id),rank(d,r=>r[ix]||'Não informado').slice(0,10),n,rank(prevD,r=>r[ix]||'Não informado').slice(0,10)));
  $('p-abord').querySelector('h2').textContent=ds.abt||'Modo de abordagem';
  const rec=d.filter(r=>r[15]&&r[15]!='Não recuperado');bars($('brec'),rank(rec,r=>r[15]).slice(0,10),rec.length);
  const rl=d.filter(r=>r[21]&&r[21]!='Não recuperado');bars($('lrec'),rank(rl,r=>r[21]).slice(0,10),rl.length);
