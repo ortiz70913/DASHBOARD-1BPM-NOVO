@@ -31,23 +31,36 @@ body.phase4-mode #dsb button.phase4-tab{background:#fff;color:#12263a;font-weigh
 .msg{margin:6px 0 0;font-size:.82rem;color:#9cc3ee}
 main{max-width:none;margin:0;padding:18px 14px 32px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:14px}
-.k{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:8px;padding:14px 16px}
-.k.hl{border-left-color:var(--hi)}
-.k span{color:var(--mut);font-size:.82rem}
-.k b{display:block;font-size:1.9rem;line-height:1.15;margin:2px 0}
-.k small{color:var(--mut);font-size:.8rem}
+.k{background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--card) 88%,var(--acc)));border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(15,28,46,.05);transition:transform .15s ease,box-shadow .15s ease}
+.k:hover{transform:translateY(-2px);box-shadow:0 5px 14px rgba(15,28,46,.09)}
+.k.hl{border-left-color:var(--hi);background:linear-gradient(145deg,var(--card),color-mix(in srgb,var(--card) 82%,var(--hi)))}
+.k span{color:var(--mut);font-size:.8rem;font-weight:650;display:block}
+.k b{display:block;font-size:2rem;line-height:1.1;margin:4px 0;letter-spacing:-.02em}
+.k small{color:var(--mut);font-size:.76rem}
+#kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:14px 0}
+@media(max-width:1100px){#kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){#kpis{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){#kpis{grid-template-columns:1fr}}
 .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.grid>.p{grid-column:span 6;min-width:0}.grid>.q{grid-column:span 3}.grid>.wide{grid-column:1/-1}@media(max-width:1300px){.grid>.q{grid-column:span 6}}@media(max-width:900px){.grid{grid-template-columns:1fr}.grid>.p,.grid>.q,.grid>.wide{grid-column:1/-1}}
 .p{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
 .p h2{font-size:.98rem;margin:0 0 12px;font-weight:650}
 .p small.n{display:block;color:var(--mut);margin-top:10px;font-size:.78rem}
 .wide{grid-column:1/-1}
-.cols{display:flex;align-items:flex-end;gap:6px;height:150px;border-bottom:1px solid var(--line)}
-.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0}
-.col i{display:block;width:100%;background:var(--acc);border-radius:3px 3px 0 0;min-height:1px}
-.col.top i{background:var(--hi)}
-.col em{font-style:normal;font-size:.72rem;margin-bottom:2px;color:var(--mut)}
-.lab{display:flex;gap:6px;margin-top:5px}
-.lab span{flex:1;text-align:center;font-size:.7rem;color:var(--mut);min-width:0}
+.cols{display:flex;align-items:flex-end;gap:7px;height:165px;border-bottom:1px solid var(--line);background:repeating-linear-gradient(to top,transparent 0,transparent 32px,var(--line) 33px);padding:0 4px}
+.col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;min-width:0;position:relative}
+.col i{display:block;width:min(100%,34px);background:linear-gradient(to top,var(--acc),var(--hi));border-radius:5px 5px 0 0;min-height:0;transition:height .25s ease,filter .2s ease}
+.col:hover i{filter:brightness(1.12)}
+.col.top i{background:var(--hi);box-shadow:0 0 0 2px color-mix(in srgb,var(--hi) 18%,transparent)}
+.col em{font-style:normal;font-size:.72rem;margin-bottom:3px;color:var(--ink);font-weight:700}
+.lab{display:flex;gap:7px;margin-top:6px}
+.lab span{flex:1;text-align:center;font-size:.7rem;color:var(--mut);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbname{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ranknum{font-style:normal;font-size:.68rem;color:var(--mut);min-width:20px}
+.hb{transition:transform .15s ease}
+.hb:hover{transform:translateX(2px)}
+.hb div{box-shadow:inset 0 0 0 1px rgba(0,0,0,.03)}
+.hb div i{transition:width .25s ease}
+.hb b u{white-space:nowrap}
 .hb{display:grid;grid-template-columns:120px 1fr 64px;gap:10px;align-items:center;margin:7px 0;font-size:.86rem}
 .hb div{background:var(--line);border-radius:4px;height:16px}
 .hb div i{display:block;height:100%;background:var(--acc);border-radius:4px}
@@ -239,10 +252,26 @@ function sw(k){
   $('msg').textContent=/^Planilha original/.test(DS[k].label||'')?'':(DS[k].label||'');
   reset();render()
 }
-function cols(el,labels,vals){const m=Math.max(...vals,1);
- el.innerHTML='<div class="cols">'+vals.map(v=>'<div class="col'+(v==m&&v>0?' top':'')+'"><em>'+v+'</em><i style="height:'+(v/m*100*.85)+'%"></i></div>').join('')+'</div><div class="lab">'+labels.map(l=>'<span>'+l+'</span>').join('')+'</div>';}
-function bars(el,list,tot){const mx=list.length?list[0][1]:1;
- el.innerHTML=list.map((t,i)=>'<div class="hb'+(i==0&&t[1]?' top':'')+'"><span>'+t[0]+'</span><div><i style="width:'+t[1]/(mx||1)*100+'%"></i></div><b>'+t[1]+' <u>'+pct(t[1],tot)+'%</u></b></div>').join('')}
+function cols(el,labels,vals){
+ const m=Math.max(...vals,1);
+ const total=vals.reduce((a,b)=>a+(Number(b)||0),0);
+ el.innerHTML='<div class="cols">'+vals.map((v,i)=>{
+   const n=Number(v)||0,top=n===m&&n>0,p=total?n/total*100:0;
+   return '<div class="col'+(top?' top':'')+'" title="'+esc(String(labels[i]??''))+': '+n+' ocorrência(s)">'+
+     '<em>'+n+'</em><i style="height:'+Math.max(n?2:0,n/m*100*.85)+'%"></i></div>';
+ }).join('')+'</div><div class="lab">'+labels.map(l=>'<span title="'+esc(String(l??''))+'">'+l+'</span>').join('')+'</div>';
+}
+function bars(el,list,tot){
+ const mx=list.length?Math.max(list[0][1],1):1;
+ el.innerHTML=list.map((t,i)=>{
+   const n=Number(t[1])||0,pctv=tot?(n/tot*100):0;
+   const width=Math.max(n?2:0,n/mx*100);
+   return '<div class="hb'+(i===0&&n?' top':'')+'">'+
+     '<span class="hbname" title="'+esc(String(t[0]??''))+'"><i class="ranknum">'+(i+1)+'º</i>'+esc(String(t[0]??''))+'</span>'+
+     '<div title="'+n+' ocorrência(s)"><i style="width:'+width+'%"></i></div>'+
+     '<b>'+n+' <u>'+pctv.toFixed(1).replace('.',',')+'%</u></b></div>';
+ }).join('');
+}
 const rank=(d,f)=>{const o={};d.forEach(r=>{const k=f(r);o[k]=(o[k]||0)+1});return Object.entries(o).sort((x,y)=>y[1]-x[1])};
 
 function addDays(iso,n){const d=new Date(iso+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
