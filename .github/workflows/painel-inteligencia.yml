@@ -1,0 +1,132 @@
+name: Adicionar painel visual de inteligência
+
+on:
+  push:
+    paths:
+      - '.github/workflows/painel-inteligencia.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inserir painel visual
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = 'data-painel-inteligencia="v1"'
+
+          if marker in s:
+              print('Painel já instalado; nenhuma alteração necessária.')
+              raise SystemExit(0)
+
+          css = r'''<style data-painel-inteligencia="v1">
+          #painelInt{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:14px;margin:16px 0}
+          #painelInt .pi-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:0 4px 14px rgba(11,37,69,.06)}
+          #painelInt .pi-card h3{margin:0 0 10px;font-size:.92rem;color:var(--hi)}
+          #painelInt .pi-sub{font-size:.72rem;color:var(--mut);margin-bottom:10px}
+          #painelInt .pi-list{display:grid;gap:8px}
+          #painelInt .pi-row{display:grid;grid-template-columns:28px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border-radius:9px;background:color-mix(in srgb,var(--bg) 72%,var(--card))}
+          #painelInt .pi-rank{font-weight:900;color:var(--hi)}
+          #painelInt .pi-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          #painelInt .pi-val{text-align:right;font-weight:900}
+          #painelInt .pi-delta{font-size:.65rem;font-weight:800;margin-left:6px}
+          #painelInt .up{color:#a15c00}.down{color:#177245}.flat{color:var(--mut)}
+          #painelInt .pi-alert{border-left:4px solid #a15c00;background:color-mix(in srgb,#a15c00 7%,var(--card))}
+          #painelInt .pi-alert.down{border-left-color:#177245}
+          #painelInt .pi-empty{color:var(--mut);font-size:.78rem;padding:8px 0}
+          #painelInt .pi-months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;align-items:end;height:145px}
+          #painelInt .pi-month{display:flex;flex-direction:column;align-items:center;justify-content:end;height:100%}
+          #painelInt .pi-bar{width:70%;min-height:2px;border-radius:5px 5px 2px 2px;background:linear-gradient(180deg,var(--hi),var(--acc));position:relative}
+          #painelInt .pi-bar b{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:.62rem}
+          #painelInt .pi-month small{margin-top:5px;color:var(--mut);font-size:.62rem}
+          @media(max-width:900px){#painelInt{grid-template-columns:1fr 1fr}.pi-months{grid-template-columns:repeat(6,1fr)}}
+          @media(max-width:620px){#painelInt{grid-template-columns:1fr}.pi-months{height:125px}}
+          </style>'''
+
+          html = r'''<section id="painelInt" data-painel-inteligencia="v1">
+            <div class="pi-card">
+              <h3>🏆 Top 5 bairros</h3>
+              <div class="pi-sub">Ranking do período selecionado, com variação frente ao período anterior.</div>
+              <div id="piTop5" class="pi-list"></div>
+            </div>
+            <div class="pi-card">
+              <h3>🚨 Maiores aumentos</h3>
+              <div class="pi-sub">Itens com maior crescimento absoluto ou percentual.</div>
+              <div id="piAlertas" class="pi-list"></div>
+            </div>
+            <div class="pi-card">
+              <h3>⏱ Horários críticos</h3>
+              <div class="pi-sub">Faixas de 2 horas com maior concentração de ocorrências.</div>
+              <div id="piHoras" class="pi-list"></div>
+            </div>
+            <div class="pi-card" style="grid-column:1/-1">
+              <h3>📈 Evolução mensal</h3>
+              <div class="pi-sub">Distribuição das ocorrências dentro do período atualmente filtrado.</div>
+              <div id="piMeses" class="pi-months"></div>
+            </div>
+          </section>'''
+
+          js = r'''<script data-painel-inteligencia="v1">
+          function renderPainelInteligencia(rows, prevRows){
+            const escPI=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+            const countBy=(arr,fn)=>{const m=new Map();arr.forEach(r=>{const k=String(fn(r)||'Não informado');m.set(k,(m.get(k)||0)+1)});return m};
+            const pct=(n,o)=>o===0?(n===0?0:100):((n-o)/o*100);
+            const delta=(n,o)=>{const p=pct(n,o);const cls=p>0?'up':p<0?'down':'flat';const ic=p>0?'▲':p<0?'▼':'●';return {cls,txt:ic+' '+(p>0?'+':'')+p.toFixed(1).replace('.',',')+'%'} };
+            const top=countBy(rows,r=>r[3]||'Não informado');
+            const old=countBy(prevRows||[],r=>r[3]||'Não informado');
+            const arr=[...top.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+            const t5=document.getElementById('piTop5');
+            if(t5)t5.innerHTML=arr.length?arr.map((x,i)=>{const d=delta(x[1],old.get(x[0])||0);return `<div class="pi-row"><span class="pi-rank">${i+1}º</span><span class="pi-name" title="${escPI(x[0])}">${escPI(x[0])}<small class="pi-delta ${d.cls}">${d.txt}</small></span><span class="pi-val">${x[1]}</span></div>`}).join(''):'<div class="pi-empty">Sem dados no período.</div>';
+            const labels=new Set([...top.keys(),...old.keys()]);
+            const alerts=[...labels].map(k=>{const n=top.get(k)||0,o=old.get(k)||0;return {k,n,o,chg:n-o,p:pct(n,o)}}).filter(x=>x.chg>0&&x.n>0).sort((a,b)=>b.chg-a.chg||b.p-a.p).slice(0,5);
+            const pa=document.getElementById('piAlertas');
+            if(pa)pa.innerHTML=alerts.length?alerts.map(x=>`<div class="pi-row pi-alert"><span class="pi-rank">▲</span><span class="pi-name">${escPI(x.k)}<small class="pi-delta up">+${x.chg} ocorrência(s) · ${x.o||0} → ${x.n}</small></span><span class="pi-val">${x.p===Infinity?'novo':'+'+x.p.toFixed(1).replace('.',',')+'%'}</span></div>`).join(''):'<div class="pi-empty">Nenhum aumento relevante.</div>';
+            const hours=countBy(rows,r=>{const h=Number(r[5]);return Number.isFinite(h)&&h>=0?String(Math.floor(h/2)*2).padStart(2,'0')+'h–'+String(Math.floor(h/2)*2+1).padStart(2,'0')+'h':'Sem horário'});
+            const ph=document.getElementById('piHoras');
+            const ha=[...hours.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
+            if(ph)ph.innerHTML=ha.length?ha.map((x,i)=>`<div class="pi-row"><span class="pi-rank">${i+1}º</span><span class="pi-name">${escPI(x[0])}</span><span class="pi-val">${x[1]}</span></div>`).join(''):'<div class="pi-empty">Sem horários informados.</div>';
+            const pm=document.getElementById('piMeses');
+            const months={}; rows.forEach(r=>{const k=String(r[0]||'').slice(0,7);if(/^\d{4}-\d{2}$/.test(k))months[k]=(months[k]||0)+1});
+            const mk=Object.keys(months).sort(); const mv=mk.map(k=>months[k]); const mm=Math.max(...mv,1);
+            if(pm)pm.innerHTML=mk.length?mk.map(k=>`<div class="pi-month"><div class="pi-bar" style="height:${Math.max(3,months[k]/mm*100)}%" title="${k}: ${months[k]} ocorrência(s)"><b>${months[k]}</b></div><small>${k.slice(5)}/${k.slice(2,4)}</small></div>`).join(''):'<div class="pi-empty">Sem dados mensais.</div>';
+          }
+          </script>'''
+
+          # Inserir CSS/HTML antes do fechamento do body e JS antes do fechamento do body.
+          if '</body>' not in s:
+              raise SystemExit('Fechamento </body> não encontrado; nenhuma alteração realizada.')
+          s=s.replace('</body>',css+html+js+'</body>',1)
+
+          # Chamada após a declaração de prevD, se ela existir; caso contrário, após renderPhase4A.
+          call="renderPainelInteligencia(d, typeof prevD!=='undefined'?prevD:[]);"
+          if call not in s:
+              if re.search(r'const\s+prevD\s*=.*?;',s):
+                  s=re.sub(r'(const\s+prevD\s*=.*?;)',r'\1'+call,s,count=1)
+              else:
+                  s=s.replace('renderPhase4A(a,z);','renderPhase4A(a,z);'+call,1)
+
+          p.write_text(s,encoding='utf-8')
+          print('Painel visual instalado.')
+
+      - name: Validar e publicar
+        shell: bash
+        run: |
+          test -s index.html
+          grep -q 'data-painel-inteligencia="v1"' index.html
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
+          git commit -m 'Adicionar painel visual de inteligência'
+          git push
