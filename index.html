@@ -37,6 +37,11 @@ main{max-width:none;margin:0;padding:18px 14px 32px}
 .k span{color:var(--mut);font-size:.8rem;font-weight:650;display:block}
 .k b{display:block;font-size:2rem;line-height:1.1;margin:4px 0;letter-spacing:-.02em}
 .k small{color:var(--mut);font-size:.76rem}
+.kdelta{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 7px;border-radius:999px;font-size:.72rem!important;font-weight:700;line-height:1.2;border:1px solid transparent}
+.kdelta.up{color:#8a4b00;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25)}
+.kdelta.down{color:#17633a;background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.22)}
+.kdelta.flat{color:var(--mut);background:rgba(127,145,166,.10);border-color:var(--line)}
+.kdelta.neutral{color:var(--mut);background:rgba(127,145,166,.08);border-color:var(--line)}
 #kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:14px 0}
 @media(max-width:1100px){#kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){#kpis{grid-template-columns:1fr 1fr}}
@@ -447,12 +452,24 @@ function render(){
  const m0=ms.length?Math.min(...ms,11):0,m1=ms.length?Math.max(...ms,0):0;
  const mes=cnt(r=>+r[0].slice(5,7)-1,12).slice(m0,m1+1),dia=cnt(r=>DIA.indexOf(r[4]),7),tur=cnt(r=>r[2]-1,4),hor=cnt(r=>r[5],24);
  const top=rank(d,r=>r[3]),pm=mes.indexOf(Math.max(...mes)),tc=byCia[0];
- const pres=new Set();d.forEach(r=>r[6].forEach(x=>pres.add(x)));const occ=d.filter(r=>r[6].length).length;
- const K={cia:'<div class="k hl"><span>Companhia com maior incidência</span><b>'+(tc[1]?tc[0]:'-')+'</b><small>'+tc[1]+' ocorrências · '+pct(tc[1],base.length)+'% do período</small></div>',
-  n:'<div class="k'+(ds.kp[0]=='n'?' hl':'')+'"><span>Total de ocorrências'+(cia?' na '+cia+'ª CIA':'')+'</span><b>'+n+'</b><small>no período selecionado</small></div>',
+ const prev=previousPeriodRange(a,z);
+ const prevRows=R.filter(r=>r[0]>=prev.start&&r[0]<=prev.end&&(!cia||r[1]==cia));
+ const prevN=prevRows.length;
+ const ciaNow=byCia[0]||['-',0];
+ const prevCiaRank=[1,2,3].map(c=>[c+'ª CIA',prevRows.filter(r=>r[1]==c).length]).sort((x,y)=>y[1]-x[1]);
+ const prevCiaCount=prevCiaRank.find(x=>x[0]===ciaNow[0])?.[1]||0;
+ const prevTopB=rank(prevRows,r=>r[3]||'Não informado')[0]||['-',0];
+ const topBName=top[0]?.[0]||'-',topBCount=top[0]?.[1]||0;
+ const prevTopBCount=prevRows.filter(r=>(r[3]||'Não informado')===topBName).length;
+ const hourNow=rank(d,r=>r[5]>=0?Math.floor(r[5]/2)*2+'h–'+(Math.floor(r[5]/2)*2+1)+'h':'Sem horário')[0]||['-',0];
+ const hourPrev=rank(prevRows,r=>r[5]>=0?Math.floor(r[5]/2)*2+'h–'+(Math.floor(r[5]/2)*2+1)+'h':'Sem horário').find(x=>x[0]===hourNow[0])||[hourNow[0],0];
+ const kdelta=(cur,old,label='período anterior')=>{const q=pctDelta(cur,old);const icon=q.cls==='up'?'▲':q.cls==='down'?'▼':'●';return '<small class="kdelta '+q.cls+'" title="Comparação com o período anterior">'+icon+' '+q.txt+' · '+label+'</small>'};
+ const topKDelta=kdelta(topBCount,prevTopBCount);
+ const K={cia:'<div class="k hl"><span>Companhia com maior incidência</span><b>'+(tc[1]?tc[0]:'-')+'</b><small>'+tc[1]+' ocorrências · '+pct(tc[1],base.length)+'% do período</small>'+kdelta(tc[1],prevCiaCount)+'</div>',
+  n:'<div class="k'+(ds.kp[0]=='n'?' hl':'')+'"><span>Total de ocorrências'+(cia?' na '+cia+'ª CIA':'')+'</span><b>'+n+'</b><small>no período selecionado</small>'+kdelta(n,prevN)+'</div>',
   presos:'<div class="k"><span>Presos/suspeitos</span><b>'+pres.size+'</b><small>em '+occ+' ocorrências</small></div>',
-  bairro:'<div class="k"><span>Bairro mais afetado</span><b>'+(top[0]?top[0][0]:'-')+'</b><small>'+(top[0]?top[0][1]:0)+' ocorrências</small></div>',
-  mes:'<div class="k"><span>Mês mais crítico</span><b>'+(n?MES[m0+pm]:'-')+'</b><small>'+(n?mes[pm]:0)+' ocorrências</small></div>'};
+  bairro:'<div class="k"><span>Bairro mais afetado</span><b>'+topBName+'</b><small>'+topBCount+' ocorrências</small>'+topKDelta+'</div>',
+  mes:'<div class="k"><span>Mês mais crítico</span><b>'+(n?MES[m0+pm]:'-')+'</b><small>'+(n?mes[pm]:0)+' ocorrências</small>'+kdelta(n?mes[pm]:0,(m0+pm)>0?cnt(r=>+r[0].slice(5,7)-1,12)[m0+pm-1]:0,'mês anterior')+'</div>'};
  $('kpis').innerHTML=ds.kp.map(x=>K[x]).join('');
  ['cia','mes','dia','turno','hora','motiv','bairro','arma','local','abord','tipo','marca','modelo','logr','brec','estab','tipoc','mat','modo','recup','lrec','tipol','empresa','linha','orv','ora'].forEach(x=>$('p-'+x).style.display=ds.ch.includes(x)?'':'none');
  ['dia','turno','orv','ora'].forEach(x=>$('p-'+x).classList.toggle('q',ds.ch.includes('orv')));
