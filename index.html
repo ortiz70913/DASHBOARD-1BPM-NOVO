@@ -771,47 +771,5 @@ function renderPainelInteligencia(rows, prevRows){
   if(pm)pm.innerHTML=mk.length?mk.map(k=>`<div class="pi-month"><div class="pi-bar" style="height:${Math.max(3,months[k]/mm*100)}%" title="${k}: ${months[k]} ocorrência(s)"><b>${months[k]}</b></div><small>${k.slice(5)}/${k.slice(2,4)}</small></div>`).join(''):'<div class="pi-empty">Sem dados mensais.</div>';
 }
 </script><script>
-/* LOGIN FINAL FIX 2026-10-15 */
-(function(){
-  function installLoginFix(){
-    var form=document.getElementById('loginForm');
-    var email=document.getElementById('email');
-    var password=document.getElementById('password');
-    var err=document.getElementById('loginErr');
-    var btn=document.getElementById('authSubmit');
-    if(!form||!email||!password||!err)return;
-    form.addEventListener('submit',async function(ev){
-      ev.preventDefault();
-      ev.stopImmediatePropagation();
-      if(btn)btn.disabled=true;
-      err.className='err';
-      err.textContent='Autenticando...';
-      try{
-        if(typeof sb==='undefined'||!sb)throw new Error('Conexão com o Supabase não foi inicializada.');
-        var r=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
-        if(r.error)throw r.error;
-        session=r.data.session;
-        if(!session)throw new Error('O Supabase autenticou, mas não retornou uma sessão.');
-        var pr=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
-        if(pr.error)throw new Error('Usuário autenticado, mas não foi possível consultar o perfil: '+pr.error.message);
-        if(!pr.data)throw new Error('Usuário autenticado, mas não existe perfil para este usuário.');
-        if(!pr.data.role)throw new Error('O perfil existe, mas o campo role está vazio.');
-        role=pr.data.role;
-        if(typeof showApp!=='function')throw new Error('A interface do Dashboard não foi inicializada corretamente.');
-        showApp();
-        if(typeof loadData==='function')await loadData();
-        if(typeof sw==='function')sw('cvli');
-        err.textContent='';
-      }catch(x){
-        console.error('LOGIN FINAL FIX:',x);
-        err.textContent=x&&x.message?x.message:String(x);
-      }finally{
-        if(btn)btn.disabled=false;
-      }
-    },true);
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLoginFix);
-  else installLoginFix();
-})();
-</script>
+
 </body></html>
