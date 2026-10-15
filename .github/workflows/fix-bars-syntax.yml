@@ -1,4 +1,4 @@
-name: Corrigir sintaxe da função bars
+name: Corrigir sintaxe e melhorar gráficos
 on:
   workflow_dispatch:
   push:
@@ -11,25 +11,64 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Corrigir linha da função bars
+      - name: Corrigir e melhorar função bars
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-          old = "}).join('')+'</div>'}).join('');"
-          new = "}).join('')+'</div>';"
-          if old not in s:
-              raise SystemExit('Trecho esperado não encontrado')
-          s2 = s.replace(old, new, 1)
-          p.write_text(s2, encoding='utf-8')
-          print('Correção aplicada:', s != s2)
+
+          # Corrige o parêntese extra caso alguma versão antiga ainda esteja presente.
+          s = s.replace("}).join('')+'</div>'}).join('');", "}).join('')+'</div>';", 1)
+
+          css = r'''
+/* GRÁFICOS — visualização aprimorada */
+.bars{display:flex;flex-direction:column;gap:12px;padding:2px 0 4px}
+.bars .bar{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:12px;align-items:center;padding:2px 0;transition:transform .15s ease}
+.bars .bar>b{font-size:.86rem;display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars .bar>b .ranknum{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:22px;border-radius:7px;background:var(--bg);color:var(--mut);font-size:.68rem;font-weight:800}
+.bars .bar>div{position:relative;height:25px;background:linear-gradient(90deg,var(--bg),color-mix(in srgb,var(--line) 65%,transparent));border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;align-items:center;min-width:0}
+.bars .bar>div i{display:block;height:100%;min-width:0;background:linear-gradient(90deg,var(--acc),var(--hi));border-radius:7px;transition:width .45s cubic-bezier(.2,.7,.2,1);box-shadow:0 1px 4px rgba(11,37,69,.16)}
+.bars .bar:first-child>div i{background:linear-gradient(90deg,var(--hi),#4f78a8)}
+.bars .bar>div em{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;font-size:.72rem;font-weight:800;color:var(--ink);background:rgba(255,255,255,.84);padding:2px 6px;border-radius:6px;white-space:nowrap;backdrop-filter:blur(2px)}
+.bars .bar:hover{transform:translateX(2px)}
+.bars .bar:hover>div i{filter:brightness(1.08)}
+.bars .bar .bardelta{grid-column:2;margin:-7px 0 0;font-size:.65rem;font-weight:800}
+@media(max-width:700px){.bars .bar{grid-template-columns:1fr;gap:5px}.bars .bar .bardelta{grid-column:1;margin:-2px 0 0 32px}.bars .bar>div{height:22px}}
+'''
+          if '/* GRÁFICOS — visualização aprimorada */' not in s:
+              s = s.replace('#loginScreen{', css + '\n#loginScreen{', 1)
+
+          start = s.find('function bars(el,list,tot,prevList){')
+          end = s.find('\nconst rank=', start)
+          if start < 0 or end < 0:
+              raise SystemExit('Função bars não localizada')
+
+          new = r'''function bars(el,list,tot,prevList){
+ const max=Math.max(...list.map(x=>Number(x[1])||0),1);
+ const t=tot||list.reduce((a,b)=>a+(Number(b[1])||0),0)||1;
+ const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));
+ el.innerHTML='<div class="bars">'+list.map((x,i)=>{
+   const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList);
+   const old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null;
+   const icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';
+   const width=Math.max(n?3:0,n/max*100);
+   return '<div class="bar" title="'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'">'+
+     '<b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b>'+
+     '<div><i style="width:'+width.toFixed(1)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+
+     (hasPrev?'<small class="bardelta '+d.cls+'">'+delta+'</small>':'')+
+     '</div>';
+ }).join('')+'</div>';
+}'''
+          s = s[:start] + new + s[end:]
+          p.write_text(s, encoding='utf-8')
           PY
       - name: Commitar correção
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Corrigir parêntese extra na função bars' || echo 'Sem alterações'
+          git diff --cached --quiet && echo 'Sem alterações' && exit 0
+          git commit -m 'Melhorar visual dos gráficos do dashboard'
           git push
