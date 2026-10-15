@@ -28,16 +28,18 @@ window.p6 = null;
   #painelInt .pi-bar b{position:absolute!important;top:-24px!important;left:50%!important;transform:translateX(-50%)!important;font-size:.78rem!important;font-weight:900!important;color:var(--ink)!important;white-space:nowrap!important}
   #painelInt .pi-month small{position:relative!important;z-index:2!important;margin-top:9px!important;color:var(--mut)!important;font-size:.7rem!important;font-weight:800!important;white-space:nowrap!important}
 
-  /* Evolução mensal principal: força uma única linha e impede setembro de cair/encavalar. */
-  #mes{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:flex-end!important;gap:18px!important;width:100%!important;min-width:0!important;overflow-x:auto!important;overflow-y:visible!important;padding:26px 18px 14px!important}
-  #mes>*{flex:1 0 105px!important;min-width:105px!important;max-width:none!important;float:none!important;position:relative!important}
-  #mes>*:last-child{margin-right:8px!important}
-  #mes *{box-sizing:border-box!important}
+  /* Ocorrências por mês: barras e rótulos precisam ocupar exatamente a mesma largura. */
+  #p-mes #mes{display:block!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important;overflow:visible!important}
+  #p-mes #mes>.cols{display:flex!important;width:100%!important;max-width:none!important;flex:0 0 100%!important;align-items:flex-end!important;gap:7px!important;height:165px!important;padding:0 4px!important;overflow:visible!important}
+  #p-mes #mes>.cols>.col{flex:1 1 0!important;min-width:0!important;max-width:none!important}
+  #p-mes #mes>.lab{display:flex!important;width:100%!important;max-width:none!important;flex:0 0 100%!important;gap:7px!important;margin-top:6px!important;padding:0 4px!important;overflow:visible!important}
+  #p-mes #mes>.lab>span{flex:1 1 0!important;min-width:0!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  #p-mes #mes .coldelta{display:block!important;white-space:nowrap!important;min-height:11px!important}
 
   @media(max-width:1100px){
     #painelInt .pi-months{grid-template-columns:repeat(9,minmax(120px,1fr))!important;gap:16px!important;overflow-x:auto!important}
-    #mes{gap:14px!important;padding-left:12px!important;padding-right:12px!important}
-    #mes>*{flex-basis:120px!important;min-width:120px!important}
+    #p-mes #mes{overflow-x:auto!important;overflow-y:visible!important}
+    #p-mes #mes>.cols,#p-mes #mes>.lab{min-width:900px!important;width:900px!important}
   }
   @media(max-width:700px){
     .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:5px!important}
@@ -46,12 +48,12 @@ window.p6 = null;
     .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:34px!important}
     #painelInt .pi-months{grid-template-columns:repeat(9,120px)!important;grid-template-rows:1fr!important;gap:16px!important;height:230px!important;min-height:230px!important;padding:28px 12px 10px!important;overflow-x:auto!important}
     #painelInt .pi-month{height:190px!important;min-width:120px!important}
-    #mes{gap:14px!important;padding:24px 10px 12px!important}
-    #mes>*{flex-basis:125px!important;min-width:125px!important}
+    #p-mes #mes>.cols,#p-mes #mes>.lab{min-width:900px!important;width:900px!important}
+    #p-mes #mes{overflow-x:auto!important;padding-bottom:4px!important}
   }
   `;
   const style=document.createElement('style');
-  style.id='dashboard-chart-enhancements-v5';
+  style.id='dashboard-chart-enhancements-v6';
   style.textContent=css;
   (document.head||document.documentElement).appendChild(style);
 })();
