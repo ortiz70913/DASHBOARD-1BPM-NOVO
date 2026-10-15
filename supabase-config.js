@@ -108,3 +108,50 @@ window.p6 = null;
   `;
   (document.head||document.documentElement).appendChild(style);
 })();
+
+/* AJUSTE-PROPORCIONAL-GRAFICOS-V1 */
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`
+    /* Todos os graficos respeitam o espaco real do card. */
+    .bars{width:100%!important;max-width:100%!important;gap:clamp(7px,1vw,11px)!important;padding:2px 0 3px!important}
+    .bars .bar{width:100%!important;min-width:0!important;grid-template-columns:minmax(120px,31%) minmax(0,1fr)!important;gap:clamp(7px,1vw,11px)!important;padding:2px 0!important}
+    .bars .bar>div{min-width:0!important;width:100%!important;height:clamp(22px,2.5vw,26px)!important}
+    .bars .bar>b{min-width:0!important;max-width:100%!important}
+
+    /* Painel de meses: 10 colunas sempre proporcionais, sem largura artificial. */
+    #painelInt .pi-months{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(170px,21vw,225px)!important;padding:28px clamp(8px,1.2vw,16px) 7px!important;overflow:hidden!important}
+    #painelInt .pi-month{min-width:0!important;width:100%!important;height:100%!important}
+    #painelInt .pi-bar{width:clamp(24px,65%,58px)!important;max-width:58px!important}
+    #painelInt .pi-month small{font-size:clamp(.58rem,.65vw,.70rem)!important}
+
+    /* Grafico mensal principal: ocupa o card, sem sobra lateral ou vertical. */
+    #p-mes #mes,#p-mes #mes.monthly-chart-fixed{width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;padding:0 6px 5px!important}
+    #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(145px,18vw,185px)!important;padding:24px 0 0!important;margin:0!important;box-sizing:border-box!important}
+    #p-mes #mes>.cols>.col,#p-mes #mes.monthly-chart-fixed>.cols>.col{min-width:0!important;width:100%!important;height:100%!important}
+    #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:clamp(18px,52%,58px)!important;max-width:58px!important;min-width:14px!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{font-size:clamp(.60rem,.7vw,.72rem)!important;margin-top:5px!important}
+    #p-mes #mes>.lab{width:100%!important;min-width:0!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important}
+
+    /* Evita que titulos, valores e eixos criem areas vazias. */
+    #painelInt .pi-months,#p-mes #mes{box-sizing:border-box!important}
+    #painelInt .pi-bar b{top:-20px!important;font-size:clamp(.65rem,.72vw,.78rem)!important}
+    #p-mes #mes>.cols>.col em,#p-mes #mes.monthly-chart-fixed>.cols>.col em{font-size:clamp(.62rem,.7vw,.75rem)!important;margin-bottom:3px!important}
+
+    @media(max-width:900px){
+      .bars .bar{grid-template-columns:minmax(105px,35%) minmax(0,1fr)!important}
+      #painelInt .pi-months{height:175px!important;gap:5px!important;padding-left:4px!important;padding-right:4px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;gap:5px!important;padding-top:22px!important}
+    }
+    @media(max-width:600px){
+      .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:4px!important}
+      .bars .bar>b{grid-column:1!important;grid-row:1!important}
+      .bars .bar>div{grid-column:1!important;grid-row:2!important}
+      .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:28px!important}
+      #painelInt .pi-months{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:165px!important;gap:3px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:150px!important;gap:3px!important}
+      #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:58%!important;min-width:10px!important}
+    }
+  `;
+  document.head.appendChild(style);
+})();
