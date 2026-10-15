@@ -226,8 +226,60 @@ let signupMode=false;
 const authSubtitle=document.getElementById('authSubtitle'),authSubmit=document.getElementById('authSubmit'),toggleSignup=document.getElementById('toggleSignup'),nameWrap=document.getElementById('nameWrap'),confirmWrap=document.getElementById('confirmWrap');
 function setAuthMode(signup){signupMode=signup;nameWrap.style.display=signup?'':'none';confirmWrap.style.display=signup?'':'none';authSubmit.textContent=signup?'Criar cadastro':'Entrar';toggleSignup.textContent=signup?'Já tenho cadastro':'Criar cadastro';authSubtitle.textContent=signup?'Crie seu acesso ao Dashboard de Ocorrências 2026.':'Faça login para acessar o Dashboard de Ocorrências 2026.';document.getElementById('loginErr').textContent='';}
 toggleSignup.onclick=()=>setAuthMode(!signupMode);
-document.getElementById('loginForm').onsubmit=async e=>{e.preventDefault();const err=document.getElementById('loginErr');err.className='err';if(!sb){err.textContent='O serviço de login não foi iniciado. Atualize a página e tente novamente.';return}const email=document.getElementById('email').value.trim();const password=document.getElementById('password').value;if(signupMode){const nome=document.getElementById('name').value.trim();const confirm=document.getElementById('passwordConfirm').value;if(password.length<6){err.textContent='A senha deve ter pelo menos 6 caracteres.';return}if(password!==confirm){err.textContent='As senhas não conferem.';return}if(!nome){err.textContent='Informe seu nome.';return}err.textContent='Criando cadastro...';const {data,error}=await sb.auth.signUp({email,password,options:{data:{nome}}});if(error){err.textContent=error.message;return}if(data.session){session=data.session;try{await loadRole();showApp();await loadData();sw('cvli')}catch(x){await sb.auth.signOut();showLogin('Cadastro criado, mas o perfil ainda não pôde ser carregado.')}}else{err.className='err ok';err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';setAuthMode(false);document.getElementById('email').value=email;document.getElementById('password').value='';}return}
-err.textContent='Entrando...';const {data,error}=await sb.auth.signInWithPassword({email,password});if(error){err.textContent=error.message;return}session=data.session;try{await loadRole()}catch(x){console.error('PERFIL:',x);showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));return}try{showApp();await loadData();sw('cvli')}catch(x){console.error('DADOS:',x);showLogin('Login realizado, mas houve erro ao carregar as ocorrências: '+(x?.message||x));}};
+document.getElementById('loginForm').onsubmit=async e=>{
+ e.preventDefault();
+ const err=document.getElementById('loginErr');
+ const btn=document.getElementById('authSubmit');
+ err.className='err';
+ if(btn)btn.disabled=true;
+ try{
+  if(!sb)throw new Error('A conexão com o Supabase não foi inicializada. Atualize a página e tente novamente.');
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  if(signupMode){
+   const nome=document.getElementById('name').value.trim();
+   const confirm=document.getElementById('passwordConfirm').value;
+   if(password.length<6)throw new Error('A senha deve ter pelo menos 6 caracteres.');
+   if(password!==confirm)throw new Error('As senhas não conferem.');
+   if(!nome)throw new Error('Informe seu nome.');
+   err.textContent='Criando cadastro...';
+   const {data,error}=await sb.auth.signUp({email,password,options:{data:{nome}}});
+   if(error)throw error;
+   if(data.session){
+    session=data.session;
+    await loadRole();
+    showApp();
+    await loadData();
+    sw('cvli');
+    err.textContent='';
+   }else{
+    err.className='err ok';
+    err.textContent='Cadastro criado. Verifique seu e-mail para confirmar a conta e depois faça login.';
+    setAuthMode(false);
+    document.getElementById('email').value=email;
+    document.getElementById('password').value='';
+   }
+   return;
+  }
+  err.textContent='Verificando e-mail e senha...';
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error)throw error;
+  session=data.session;
+  if(!session)throw new Error('O Supabase não retornou uma sessão de acesso.');
+  err.textContent='Login confirmado. Carregando seu perfil...';
+  await loadRole();
+  showApp();
+  await loadData();
+  sw('cvli');
+  err.textContent='';
+ }catch(x){
+  console.error('ERRO NO LOGIN:',x);
+  err.className='err';
+  err.textContent='Não foi possível entrar: '+(x&&x.message?x.message:String(x));
+ }finally{
+  if(btn)btn.disabled=false;
+ }
+};
 document.getElementById('logout').onclick=async()=>{await sb.auth.signOut();session=null;role='';showLogin();};
 if(sb)sb.auth.onAuthStateChange((_event,s)=>{
   session=s;
