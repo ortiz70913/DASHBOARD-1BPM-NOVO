@@ -1,0 +1,35 @@
+name: Corrigir sintaxe da função bars
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/fix-bars-syntax.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corrigir linha da função bars
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = "}).join('')+'</div>'}).join('');"
+          new = "}).join('')+'</div>';"
+          if old not in s:
+              raise SystemExit('Trecho esperado não encontrado')
+          s2 = s.replace(old, new, 1)
+          p.write_text(s2, encoding='utf-8')
+          print('Correção aplicada:', s != s2)
+          PY
+      - name: Commitar correção
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corrigir parêntese extra na função bars' || echo 'Sem alterações'
+          git push
