@@ -1,0 +1,1 @@
+Ajuste do gráfico mensal para manter os 10 meses alinhados em uma única linha.
