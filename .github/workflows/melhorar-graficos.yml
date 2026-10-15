@@ -1,0 +1,79 @@
+name: Melhorar gráficos do dashboard
+on:
+  push:
+    paths:
+      - '.github/workflows/melhorar-graficos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  melhorar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Melhorar gráficos horizontais
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          css = r'''
+/* GRÁFICOS — visualização aprimorada */
+.bars{display:flex;flex-direction:column;gap:12px;padding:2px 0 4px}
+.bars .bar{display:grid;grid-template-columns:minmax(150px,34%) 1fr;gap:12px;align-items:center;padding:2px 0}
+.bars .bar>b{font-size:.86rem;display:flex;align-items:center;gap:6px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars .bar>b .ranknum{display:inline-flex;align-items:center;justify-content:center;min-width:27px;height:22px;border-radius:7px;background:var(--bg);color:var(--mut);font-size:.68rem;font-weight:800}
+.bars .bar>div{position:relative;height:25px;background:linear-gradient(90deg,var(--bg),color-mix(in srgb,var(--line) 65%,transparent));border:1px solid var(--line);border-radius:8px;overflow:hidden;display:flex;align-items:center;min-width:0}
+.bars .bar>div i{display:block;height:100%;min-width:0;background:linear-gradient(90deg,var(--acc),var(--hi));border-radius:7px;transition:width .45s cubic-bezier(.2,.7,.2,1);box-shadow:0 1px 4px rgba(11,37,69,.16)}
+.bars .bar:first-child>div i{background:linear-gradient(90deg,var(--hi),#4f78a8)}
+.bars .bar>div em{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;font-size:.72rem;font-weight:800;color:var(--ink);background:rgba(255,255,255,.82);padding:2px 6px;border-radius:6px;white-space:nowrap;backdrop-filter:blur(2px)}
+@media(prefers-color-scheme:dark){.bars .bar>div em{background:rgba(17,30,48,.84)}}
+.bars .bar:hover{transform:translateX(2px)}
+.bars .bar:hover>div i{filter:brightness(1.08)}
+.bars .bardelta{grid-column:2;margin:-7px 0 0;font-size:.65rem;font-weight:800}
+'''
+
+          marker = '#loginScreen{'
+          if '/* GRÁFICOS — visualização aprimorada */' not in s:
+              s = s.replace(marker, css + '\n' + marker, 1)
+
+          old = "function bars(el,list,tot,prevList){const mx=list[0]?.[1]||1;const t=tot||list.reduce((a,b)=>a+b[1],0)||1;const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));el.innerHTML='<div class=\"bars\">'+list.map((x,i)=>{const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList),old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null,icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';return '<div class=\"bar\" title=\"'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'\"><b><span class=\"ranknum\">'+(i+1)+'º</span> '+esc(label)+'</b><div><i style=\"width:'+Math.max(n?2:0,n/mx*100)+'%\"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+(hasPrev?'<small class=\"bardelta '+d.cls+'\">'+delta+'</small>':'')+'</div>'}).join('')+'</div>'; }"
+
+          # The deployed file may have no space before the final brace; replace robustly by locating the function boundaries.
+          start = s.find('function bars(el,list,tot,prevList){')
+          end = s.find('\nconst rank=', start)
+          if start < 0 or end < 0:
+              raise SystemExit('Não foi possível localizar a função bars no index.html')
+
+          new = r'''function bars(el,list,tot,prevList){
+ const max=Math.max(...list.map(x=>Number(x[1])||0),1);
+ const t=tot||list.reduce((a,b)=>a+(Number(b[1])||0),0)||1;
+ const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));
+ el.innerHTML='<div class="bars">'+list.map((x,i)=>{
+   const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList);
+   const old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null;
+   const icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';
+   const width=Math.max(n?3:0,n/max*100);
+   return '<div class="bar" title="'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'">'+
+     '<b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b>'+
+     '<div><i style="width:'+width.toFixed(1)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+
+     (hasPrev?'<small class="bardelta '+d.cls+'">'+delta+'</small>':'')+
+     '</div>';
+ }).join('')+'</div>';
+}'''
+          s = s[:start] + new + s[end:]
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commitar alteração
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
+          git commit -m 'Melhorar visual dos gráficos do dashboard'
+          git push
