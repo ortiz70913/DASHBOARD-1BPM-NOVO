@@ -42,9 +42,6 @@ jobs:
           if '/* GRÁFICOS — visualização aprimorada */' not in s:
               s = s.replace(marker, css + '\n' + marker, 1)
 
-          old = "function bars(el,list,tot,prevList){const mx=list[0]?.[1]||1;const t=tot||list.reduce((a,b)=>a+b[1],0)||1;const pm=new Map((prevList||[]).map(x=>[String(x[0]??''),Number(x[1])||0]));el.innerHTML='<div class=\"bars\">'+list.map((x,i)=>{const label=String(x[0]??''),n=Number(x[1])||0,pctv=n/t*100,hasPrev=Array.isArray(prevList),old=hasPrev?(pm.get(label)||0):null,d=hasPrev?pctDelta(n,old):null,icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';return '<div class=\"bar\" title=\"'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'\"><b><span class=\"ranknum\">'+(i+1)+'º</span> '+esc(label)+'</b><div><i style=\"width:'+Math.max(n?2:0,n/mx*100)+'%\"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+(hasPrev?'<small class=\"bardelta '+d.cls+'\">'+delta+'</small>':'')+'</div>'}).join('')+'</div>'; }"
-
-          # The deployed file may have no space before the final brace; replace robustly by locating the function boundaries.
           start = s.find('function bars(el,list,tot,prevList){')
           end = s.find('\nconst rank=', start)
           if start < 0 or end < 0:
@@ -60,8 +57,8 @@ jobs:
    const icon=d?(d.cls==='up'?'▲':d.cls==='down'?'▼':'●'):'',delta=d?(icon+' '+d.txt):'';
    const width=Math.max(n?3:0,n/max*100);
    return '<div class="bar" title="'+esc(label)+': '+n+' ocorrência(s)'+(hasPrev?' · anterior: '+old:'')+'">'+
-     '<b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b>'+
-     '<div><i style="width:'+width.toFixed(1)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+
+     '<b><span class="ranknum">'+(i+1)+'º</span> '+esc(label)+'</b>'+ 
+     '<div><i style="width:'+width.toFixed(1)+'%"></i><em>'+n+' · '+pctv.toFixed(1).replace('.',',')+'%</em></div>'+ 
      (hasPrev?'<small class="bardelta '+d.cls+'">'+delta+'</small>':'')+
      '</div>';
  }).join('')+'</div>';
@@ -69,11 +66,29 @@ jobs:
           s = s[:start] + new + s[end:]
           p.write_text(s, encoding='utf-8')
 
+      - name: Corrigir gráfico mensal para 10 meses
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('supabase-config.js')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+              'repeat(9,minmax(110px,1fr))': 'repeat(10,minmax(90px,1fr))',
+              'repeat(9,minmax(120px,1fr))': 'repeat(10,minmax(90px,1fr))',
+              'repeat(9,120px)': 'repeat(10,90px)',
+              'repeat(9,minmax(0,1fr))': 'repeat(10,minmax(0,1fr))',
+              'repeat(9,minmax(90px,1fr))': 'repeat(10,minmax(90px,1fr))',
+              'min-width:900px': 'min-width:1000px'
+          }
+          for old,new in replacements.items():
+              s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+
       - name: Commitar alteração
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
+          git add index.html supabase-config.js
           git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
-          git commit -m 'Melhorar visual dos gráficos do dashboard'
+          git commit -m 'Corrigir gráfico mensal da aba roubo a pedestre'
           git push
