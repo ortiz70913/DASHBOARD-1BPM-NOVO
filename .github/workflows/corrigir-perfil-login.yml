@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/corrigir-perfil-login.yml'
+      - 'login-fix-trigger.txt'
   workflow_dispatch:
 permissions:
   contents: write
@@ -15,10 +16,8 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
           p=Path('index.html')
           s=p.read_text(encoding='utf-8')
-
           start=s.find('async function loadRole()')
           finish=s.find('async function startApp()',start)
           if start < 0 or finish < 0: raise SystemExit('funções de login não localizadas')
@@ -32,10 +31,9 @@ jobs:
 
   """
           s=s[:start]+new_role+s[finish:]
-
           s=s.replace("showLogin('Não foi possível carregar seu perfil.');","showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));",1)
+          s=s.replace("await sb.auth.signOut();\nshowLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));","showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));",1)
           s=s.replace("await sb.auth.signOut();\n      showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));","showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));",1)
-
           old="if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
           if old in s:
               new="""if(sb)sb.auth.onAuthStateChange((_event,s)=>{
@@ -47,7 +45,6 @@ jobs:
     }
   });"""
               s=s.replace(old,new,1)
-
           p.write_text(s,encoding='utf-8')
           print('Correções aplicadas')
       - name: Publicar
