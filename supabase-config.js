@@ -3,7 +3,7 @@ window.SUPABASE_ANON_KEY = 'sb_publishable_AH0rCyKZ4J5SMfMwof3TkA_wkTXeg9D';
 // Compatibilidade com versões antigas do dashboard: evita erro "p6 is not defined".
 window.p6 = null;
 
-// Melhoria visual dos gráficos horizontais já existentes no dashboard.
+// Melhorias visuais dos gráficos do dashboard.
 (function(){
   const css = `
   .bars{display:flex!important;flex-direction:column!important;gap:10px!important;padding:4px 0 6px!important;width:100%!important}
@@ -18,15 +18,30 @@ window.p6 = null;
   .bars .bar:hover{transform:translateX(3px)!important;filter:brightness(1.02)!important}
   .bars .bar:hover>div i{filter:brightness(1.1)!important}
   .bars .bar:nth-child(1)>b .ranknum{background:#0b2545!important;color:#fff!important;border-color:#0b2545!important}
+
+  /* Evolução mensal: 1 coluna por mês, espaçamento amplo e escala vertical clara. */
+  #painelInt .pi-months{display:grid!important;grid-template-columns:repeat(9,minmax(55px,1fr))!important;gap:14px!important;align-items:stretch!important;height:220px!important;padding:22px 10px 8px!important;margin-top:8px!important;border-bottom:1px solid var(--line)!important;overflow:visible!important}
+  #painelInt .pi-month{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;height:100%!important;min-width:0!important;position:relative!important}
+  #painelInt .pi-month::before{content:''!important;position:absolute!important;left:50%!important;top:0!important;bottom:27px!important;border-left:1px dashed color-mix(in srgb,var(--line) 75%,transparent)!important;transform:translateX(-50%)!important;pointer-events:none!important;opacity:.55!important}
+  #painelInt .pi-bar{width:min(58px,72%)!important;min-height:5px!important;border-radius:7px 7px 3px 3px!important;background:linear-gradient(180deg,var(--hi),var(--acc))!important;position:relative!important;z-index:1!important;box-shadow:0 3px 8px rgba(11,37,69,.16)!important;transition:height .45s cubic-bezier(.2,.7,.2,1),filter .15s ease!important}
+  #painelInt .pi-bar:hover{filter:brightness(1.08)!important}
+  #painelInt .pi-bar b{position:absolute!important;top:-22px!important;left:50%!important;transform:translateX(-50%)!important;font-size:.72rem!important;font-weight:800!important;color:var(--ink)!important;white-space:nowrap!important}
+  #painelInt .pi-month small{position:relative!important;z-index:2!important;margin-top:8px!important;color:var(--mut)!important;font-size:.68rem!important;font-weight:700!important;white-space:nowrap!important}
+
+  @media(max-width:1100px){
+    #painelInt .pi-months{grid-template-columns:repeat(6,minmax(55px,1fr))!important;gap:12px!important}
+  }
   @media(max-width:700px){
     .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:5px!important}
     .bars .bar>b{grid-column:1!important;grid-row:1!important}
     .bars .bar>div{grid-column:1!important;grid-row:2!important;height:23px!important}
     .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:34px!important}
+    #painelInt .pi-months{grid-template-columns:repeat(3,minmax(70px,1fr))!important;gap:16px!important;height:auto!important;min-height:230px!important;padding:26px 10px 10px!important}
+    #painelInt .pi-month{height:190px!important}
   }
   `;
   const style=document.createElement('style');
-  style.id='dashboard-chart-enhancements-v2';
+  style.id='dashboard-chart-enhancements-v3';
   style.textContent=css;
   (document.head||document.documentElement).appendChild(style);
 })();
