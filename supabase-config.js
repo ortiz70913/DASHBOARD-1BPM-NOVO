@@ -80,7 +80,7 @@ window.p6 = null;
   const style=document.createElement('style');
   style.textContent=`
     #p-mes #mes.monthly-chart-fixed{overflow-x:auto!important;padding:0 12px 10px!important}
-    #p-mes #mes.monthly-chart-fixed>.cols{display:grid!important;grid-template-columns:repeat(10,minmax(90px,1fr))!important;grid-template-rows:1fr!important;gap:14px!important;width:100%!important;min-width:1000px!important;height:195px!important;align-items:end!important;margin:0!important;padding:0!important}
+    #p-mes #mes.monthly-chart-fixed>.cols{display:grid!important;grid-template-columns:repeat(10,minmax(90px,1fr))!important;grid-template-rows:1fr!important;gap:14px!important;width:100%!important;min-width:1000px!important;height:225px!important;align-items:end!important;margin:0!important;padding:0!important}
     #p-mes #mes.monthly-chart-fixed>.cols>.col{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;width:auto!important;min-width:0!important;height:100%!important;position:relative!important}
     #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{display:block!important;margin-top:8px!important;height:20px!important;line-height:20px!important;text-align:center!important;font-size:.72rem!important;font-weight:800!important;color:var(--mut)!important;white-space:nowrap!important}
     #p-mes #mes.monthly-chart-fixed>.cols>.col i{width:58%!important;max-width:62px!important;min-width:20px!important}
@@ -92,4 +92,19 @@ window.p6 = null;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else setTimeout(run,0);
   const mo=new MutationObserver(()=>fixMonthlyChart());
   mo.observe(document.documentElement,{childList:true,subtree:true});
+})();
+
+// Ajuste do gráfico mensal: o valor de janeiro estava sendo cortado no topo.
+// Mantém todos os 10 meses alinhados e cria espaço vertical para que o número da barra apareça.
+(function(){
+  const style=document.createElement('style');
+  style.id='monthly-january-value-fix';
+  style.textContent=`
+    #p-mes #mes.monthly-chart-fixed>.cols{height:225px!important;padding-top:22px!important;overflow:visible!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col{overflow:visible!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col i,
+    #p-mes #mes.monthly-chart-fixed>.cols>.col em,
+    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{overflow:visible!important}
+  `;
+  (document.head||document.documentElement).appendChild(style);
 })();
