@@ -17,50 +17,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Aplicar correção definitiva
+      - name: Restaurar dashboard funcional e configurar Supabase
         shell: bash
         run: |
+          # Restaura o index.html da última versão funcional anterior à alteração acidental.
+          git show c6fa98644289dcfbcbce200f235e252c826c1bc0:index.html > index.html
+
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
 
-          # Corrige o erro de sintaxe causado pela quebra de linha dentro de string simples.
-          s = s.replace("err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';", "err.textContent='Cadastro criado com sucesso.\\nVerifique seu e-mail para confirmar a conta e depois faça login.';")
+          # Configuração pública do projeto Supabase DASHBOARD-1BPM.
+          config="""<script>\nwindow.SUPABASE_URL='https://rbpuatcdlbfqxfkbvgst.supabase.co';\nwindow.SUPABASE_ANON_KEY='sb_publishable_AH0rCyKZ4J5SMfMwof3TkA_wkTXeg9D';\n</script>\n"""
+          if 'window.SUPABASE_URL' not in s:
+              s=s.replace('</head>',config+'</head>',1)
+          else:
+              import re
+              s=re.sub(r"const SUPABASE_URL=.*?;", "const SUPABASE_URL=window.SUPABASE_URL||'https://rbpuatcdlbfqxfkbvgst.supabase.co';", s, count=1)
+              s=re.sub(r"const SUPABASE_ANON_KEY=.*?;", "const SUPABASE_ANON_KEY=window.SUPABASE_ANON_KEY||'sb_publishable_AH0rCyKZ4J5SMfMwof3TkA_wkTXeg9D';", s, count=1)
 
-          # Torna a leitura do perfil explícita e tolerante a ausência de linha.
-          start = s.find('async function loadRole()')
-          finish = s.find('async function startApp()', start)
-          if start < 0 or finish < 0:
-              raise SystemExit('Funções loadRole/startApp não localizadas')
-
-          role_fn = '''async function loadRole(){
-            const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
-            if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);
-            if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');
-            if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');
-            role=data.role;
-          }
-
-          '''
-          s = s[:start] + role_fn + s[finish:]
-
-          # Evita que o listener de auth apague mensagens de erro da tela de login.
-          old = "if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
-          new = '''if(sb)sb.auth.onAuthStateChange((_event,s)=>{
-            session=s;
-            if(!s){
-              role='';
-              const e=document.getElementById('loginErr');
-              if(e && !e.textContent)showLogin();
-            }
-          });'''
-          if old in s:
-              s = s.replace(old,new,1)
+          # Corrige eventual string quebrada do cadastro.
+          s=s.replace("err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';", "err.textContent='Cadastro criado com sucesso.\\nVerifique seu e-mail para confirmar a conta e depois faça login.';")
 
           p.write_text(s,encoding='utf-8')
-          print('Correção aplicada')
+          print('Dashboard restaurado e Supabase configurado')
           PY
 
       - name: Publicar
@@ -70,5 +51,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m 'Corrigir sintaxe e fluxo de login'
+          git commit -m 'Restaurar dashboard e configurar Supabase'
           git push
