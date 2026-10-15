@@ -1,0 +1,35 @@
+name: Ajustar grafico mensal
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'grafico-mensal.trigger'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ajustar colunas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('supabase-config.js')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('repeat(9,minmax(110px,1fr))','repeat(10,minmax(90px,1fr))')
+          s=s.replace('repeat(9,minmax(120px,1fr))','repeat(10,minmax(90px,1fr))')
+          s=s.replace('repeat(9,120px)','repeat(10,90px)')
+          s=s.replace('repeat(9,minmax(0,1fr))','repeat(10,minmax(0,1fr))')
+          s=s.replace('repeat(9,minmax(90px,1fr))','repeat(10,minmax(90px,1fr))')
+          s=s.replace('min-width:900px','min-width:1000px')
+          p.write_text(s,encoding='utf-8')
+          PY
+      - name: Commitar
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supabase-config.js
+          git diff --cached --quiet && exit 0
+          git commit -m 'Ajustar grafico mensal para dez meses'
+          git push
