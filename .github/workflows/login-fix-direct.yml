@@ -1,0 +1,63 @@
+name: Aplicar correção direta do login
+on:
+  push:
+    paths:
+      - 'login-fix-trigger.txt'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix-login:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Corrigir perfil e tratamento do login
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          start = s.find('async function loadRole()')
+          finish = s.find('async function startApp()', start)
+          if start < 0 or finish < 0:
+              raise SystemExit('Funções de login não localizadas')
+
+          role = """async function loadRole(){
+            const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+            if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);
+            if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');
+            if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');
+            role=data.role;
+          }
+
+          """
+          s = s[:start] + role + s[finish:]
+
+          s = s.replace("showLogin('Não foi possível carregar seu perfil.');", "showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));", 1)
+          s = s.replace("await sb.auth.signOut();showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", "showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", 1)
+          s = s.replace("await sb.auth.signOut();\nshowLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", "showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", 1)
+          s = s.replace("await sb.auth.signOut();\n      showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", "showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));", 1)
+
+          old = "if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+          new = """if(sb)sb.auth.onAuthStateChange((_event,s)=>{
+            session=s;
+            if(!s){
+              role='';
+              const e=document.getElementById('loginErr');
+              if(e && !e.textContent)showLogin();
+            }
+          });"""
+          if old in s:
+              s = s.replace(old, new, 1)
+
+          p.write_text(s, encoding='utf-8')
+          print('Correção direta aplicada')
+          PY
+      - name: Publicar alteração
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Corrigir login e perfil definitivamente' || exit 0
+          git push
