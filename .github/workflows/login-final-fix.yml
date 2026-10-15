@@ -1,0 +1,84 @@
+name: Corrigir login do Dashboard
+
+on:
+  push:
+    paths:
+      - .github/login-fix-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar correção de login
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '/* LOGIN FINAL FIX 2026-10-15 */'
+          if marker in s:
+              print('Correção já aplicada.')
+              raise SystemExit(0)
+          script = r'''<script>
+          /* LOGIN FINAL FIX 2026-10-15 */
+          (function(){
+            function installLoginFix(){
+              var form=document.getElementById('loginForm');
+              var email=document.getElementById('email');
+              var password=document.getElementById('password');
+              var err=document.getElementById('loginErr');
+              var btn=document.getElementById('authSubmit');
+              if(!form||!email||!password||!err)return;
+              form.addEventListener('submit',async function(ev){
+                ev.preventDefault();
+                ev.stopImmediatePropagation();
+                if(btn)btn.disabled=true;
+                err.className='err';
+                err.textContent='Autenticando...';
+                try{
+                  if(typeof sb==='undefined'||!sb)throw new Error('Conexão com o Supabase não foi inicializada.');
+                  var r=await sb.auth.signInWithPassword({email:email.value.trim(),password:password.value});
+                  if(r.error)throw r.error;
+                  session=r.data.session;
+                  if(!session)throw new Error('O Supabase autenticou, mas não retornou uma sessão.');
+                  var pr=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+                  if(pr.error)throw new Error('Usuário autenticado, mas não foi possível consultar o perfil: '+pr.error.message);
+                  if(!pr.data)throw new Error('Usuário autenticado, mas não existe perfil para este usuário.');
+                  if(!pr.data.role)throw new Error('O perfil existe, mas o campo role está vazio.');
+                  role=pr.data.role;
+                  if(typeof showApp!=='function')throw new Error('A interface do Dashboard não foi inicializada corretamente.');
+                  showApp();
+                  if(typeof loadData==='function')await loadData();
+                  if(typeof sw==='function')sw('cvli');
+                  err.textContent='';
+                }catch(x){
+                  console.error('LOGIN FINAL FIX:',x);
+                  err.textContent=x&&x.message?x.message:String(x);
+                }finally{
+                  if(btn)btn.disabled=false;
+                }
+              },true);
+            }
+            if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installLoginFix);
+            else installLoginFix();
+          })();
+          </script>'''
+          if '</body>' not in s:
+              raise SystemExit('Não encontrei </body> em index.html')
+          s=s.replace('</body>',script+'\n</body>',1)
+          p.write_text(s,encoding='utf-8')
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Corrigir fluxo de login do Dashboard"
+          git push
