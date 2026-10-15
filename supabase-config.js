@@ -19,7 +19,6 @@ window.p6 = null;
   .bars .bar:hover>div i{filter:brightness(1.1)!important}
   .bars .bar:nth-child(1)>b .ranknum{background:#0b2545!important;color:#fff!important;border-color:#0b2545!important}
 
-  /* Evolução mensal do painel de inteligência. */
   #painelInt .pi-months{display:grid!important;grid-template-columns:repeat(9,minmax(110px,1fr))!important;grid-template-rows:1fr!important;grid-auto-flow:column!important;gap:18px!important;align-items:stretch!important;height:250px!important;padding:30px 18px 10px!important;margin-top:8px!important;border-bottom:1px solid var(--line)!important;overflow-x:auto!important;overflow-y:visible!important;box-sizing:border-box!important}
   #painelInt .pi-month{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;height:100%!important;min-width:110px!important;position:relative!important}
   #painelInt .pi-month::before{content:''!important;position:absolute!important;left:50%!important;top:0!important;bottom:30px!important;border-left:1px dashed color-mix(in srgb,var(--line) 75%,transparent)!important;transform:translateX(-50%)!important;pointer-events:none!important;opacity:.55!important}
@@ -28,7 +27,6 @@ window.p6 = null;
   #painelInt .pi-bar b{position:absolute!important;top:-24px!important;left:50%!important;transform:translateX(-50%)!important;font-size:.78rem!important;font-weight:900!important;color:var(--ink)!important;white-space:nowrap!important}
   #painelInt .pi-month small{position:relative!important;z-index:2!important;margin-top:9px!important;color:var(--mut)!important;font-size:.7rem!important;font-weight:800!important;white-space:nowrap!important}
 
-  /* Ocorrências por mês: barras e rótulos usam a mesma grade de 9 colunas. */
   #p-mes #mes{display:block!important;width:100%!important;min-width:0!important;margin:0!important;padding:0 12px 8px!important;overflow-x:auto!important;overflow-y:visible!important}
   #p-mes #mes>.cols{display:grid!important;grid-template-columns:repeat(9,minmax(0,1fr))!important;grid-template-rows:1fr!important;width:100%!important;min-width:900px!important;height:165px!important;align-items:end!important;gap:14px!important;padding:0!important;margin:0!important;box-sizing:border-box!important}
   #p-mes #mes>.cols>.col{display:flex!important;flex-direction:column!important;justify-content:flex-end!important;align-items:center!important;min-width:0!important;width:auto!important;max-width:none!important;flex:initial!important;position:relative!important;height:100%!important}
@@ -57,4 +55,41 @@ window.p6 = null;
   style.id='dashboard-chart-enhancements-v7';
   style.textContent=css;
   (document.head||document.documentElement).appendChild(style);
+})();
+
+// Correção definitiva: cada mês passa a ficar dentro da própria coluna da barra.
+// Isso elimina qualquer desalinhamento causado por estruturas independentes de .cols e .lab.
+(function(){
+  function fixMonthlyChart(){
+    const root=document.getElementById('mes');
+    if(!root)return;
+    const cols=root.querySelector(':scope > .cols');
+    const lab=root.querySelector(':scope > .lab');
+    if(!cols || !lab)return;
+    const labels=[...lab.children].map(x=>x.textContent.trim());
+    const items=[...cols.children];
+    if(!items.length || !labels.length)return;
+    items.forEach((col,i)=>{
+      let tag=col.querySelector('.month-label');
+      if(!tag){tag=document.createElement('span');tag.className='month-label';col.appendChild(tag)}
+      tag.textContent=labels[i]||'';
+    });
+    lab.remove();
+    root.classList.add('monthly-chart-fixed');
+  }
+  const style=document.createElement('style');
+  style.textContent=`
+    #p-mes #mes.monthly-chart-fixed{overflow-x:auto!important;padding:0 12px 10px!important}
+    #p-mes #mes.monthly-chart-fixed>.cols{display:grid!important;grid-template-columns:repeat(9,minmax(90px,1fr))!important;grid-template-rows:1fr!important;gap:14px!important;width:100%!important;min-width:900px!important;height:195px!important;align-items:end!important;margin:0!important;padding:0!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;width:auto!important;min-width:0!important;height:100%!important;position:relative!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{display:block!important;margin-top:8px!important;height:20px!important;line-height:20px!important;text-align:center!important;font-size:.72rem!important;font-weight:800!important;color:var(--mut)!important;white-space:nowrap!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col i{width:58%!important;max-width:62px!important;min-width:20px!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col em{margin-bottom:5px!important}
+    @media(max-width:700px){#p-mes #mes.monthly-chart-fixed>.cols{min-width:900px!important;grid-template-columns:repeat(9,minmax(90px,1fr))!important}}
+  `;
+  document.head.appendChild(style);
+  const run=()=>fixMonthlyChart();
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else setTimeout(run,0);
+  const mo=new MutationObserver(()=>fixMonthlyChart());
+  mo.observe(document.documentElement,{childList:true,subtree:true});
 })();
