@@ -1,57 +1,74 @@
-name: Corrigir perfil e mensagem do login
+name: Corrigir perfil e login do Dashboard
+
 on:
   push:
     paths:
       - '.github/workflows/corrigir-perfil-login.yml'
       - 'login-fix-trigger.txt'
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Corrigir tratamento do perfil e erro de login
-        shell: python
-        run: |
-          from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          start=s.find('async function loadRole()')
-          finish=s.find('async function startApp()',start)
-          if start < 0 or finish < 0: raise SystemExit('funções de login não localizadas')
-          new_role="""async function loadRole(){
-    const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
-    if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);
-    if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');
-    if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');
-    role=data.role;
-  }
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  """
-          s=s[:start]+new_role+s[finish:]
-          s=s.replace("showLogin('Não foi possível carregar seu perfil.');","showLogin('Não foi possível carregar seu perfil: '+(e?.message||e));",1)
-          s=s.replace("await sb.auth.signOut();\nshowLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));","showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));",1)
-          s=s.replace("await sb.auth.signOut();\n      showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));","showLogin('Usuário autenticado, mas o perfil não pôde ser carregado: '+(x?.message||x));",1)
-          old="if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+      - name: Aplicar correção definitiva
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Corrige o erro de sintaxe causado pela quebra de linha dentro de string simples.
+          s = s.replace("err.textContent='Cadastro criado com sucesso.\nVerifique seu e-mail para confirmar a conta e depois faça login.';", "err.textContent='Cadastro criado com sucesso.\\nVerifique seu e-mail para confirmar a conta e depois faça login.';")
+
+          # Torna a leitura do perfil explícita e tolerante a ausência de linha.
+          start = s.find('async function loadRole()')
+          finish = s.find('async function startApp()', start)
+          if start < 0 or finish < 0:
+              raise SystemExit('Funções loadRole/startApp não localizadas')
+
+          role_fn = '''async function loadRole(){
+            const {data,error}=await sb.from('profiles').select('role').eq('id',session.user.id).maybeSingle();
+            if(error)throw new Error('Não foi possível consultar seu perfil na tabela profiles: '+error.message);
+            if(!data)throw new Error('Seu usuário foi autenticado, mas não existe registro na tabela profiles para este usuário.');
+            if(!data.role)throw new Error('Seu registro em profiles existe, mas o campo role está vazio.');
+            role=data.role;
+          }
+
+          '''
+          s = s[:start] + role_fn + s[finish:]
+
+          # Evita que o listener de auth apague mensagens de erro da tela de login.
+          old = "if(sb)sb.auth.onAuthStateChange((_event,s)=>{session=s;if(!s){role='';showLogin();}});"
+          new = '''if(sb)sb.auth.onAuthStateChange((_event,s)=>{
+            session=s;
+            if(!s){
+              role='';
+              const e=document.getElementById('loginErr');
+              if(e && !e.textContent)showLogin();
+            }
+          });'''
           if old in s:
-              new="""if(sb)sb.auth.onAuthStateChange((_event,s)=>{
-    session=s;
-    if(!s){
-      role='';
-      const e=document.getElementById('loginErr');
-      if(e && !e.textContent)showLogin();
-    }
-  });"""
-              s=s.replace(old,new,1)
+              s = s.replace(old,new,1)
+
           p.write_text(s,encoding='utf-8')
-          print('Correções aplicadas')
+          print('Correção aplicada')
+          PY
+
       - name: Publicar
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html
-          git commit -m 'Corrigir login e perfil definitivamente' || exit 0
+          git diff --cached --quiet && exit 0
+          git commit -m 'Corrigir sintaxe e fluxo de login'
           git push
