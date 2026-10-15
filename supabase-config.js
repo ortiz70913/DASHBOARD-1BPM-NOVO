@@ -19,7 +19,7 @@ window.p6 = null;
   .bars .bar:hover>div i{filter:brightness(1.1)!important}
   .bars .bar:nth-child(1)>b .ranknum{background:#0b2545!important;color:#fff!important;border-color:#0b2545!important}
 
-  /* Evolução mensal: nove meses em uma única linha, sem quebra. */
+  /* Evolução mensal do painel de inteligência. */
   #painelInt .pi-months{display:grid!important;grid-template-columns:repeat(9,minmax(110px,1fr))!important;grid-template-rows:1fr!important;grid-auto-flow:column!important;gap:18px!important;align-items:stretch!important;height:250px!important;padding:30px 18px 10px!important;margin-top:8px!important;border-bottom:1px solid var(--line)!important;overflow-x:auto!important;overflow-y:visible!important;box-sizing:border-box!important}
   #painelInt .pi-month{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;height:100%!important;min-width:110px!important;position:relative!important}
   #painelInt .pi-month::before{content:''!important;position:absolute!important;left:50%!important;top:0!important;bottom:30px!important;border-left:1px dashed color-mix(in srgb,var(--line) 75%,transparent)!important;transform:translateX(-50%)!important;pointer-events:none!important;opacity:.55!important}
@@ -28,8 +28,16 @@ window.p6 = null;
   #painelInt .pi-bar b{position:absolute!important;top:-24px!important;left:50%!important;transform:translateX(-50%)!important;font-size:.78rem!important;font-weight:900!important;color:var(--ink)!important;white-space:nowrap!important}
   #painelInt .pi-month small{position:relative!important;z-index:2!important;margin-top:9px!important;color:var(--mut)!important;font-size:.7rem!important;font-weight:800!important;white-space:nowrap!important}
 
+  /* Evolução mensal principal: força uma única linha e impede setembro de cair/encavalar. */
+  #mes{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:flex-end!important;gap:18px!important;width:100%!important;min-width:0!important;overflow-x:auto!important;overflow-y:visible!important;padding:26px 18px 14px!important}
+  #mes>*{flex:1 0 105px!important;min-width:105px!important;max-width:none!important;float:none!important;position:relative!important}
+  #mes>*:last-child{margin-right:8px!important}
+  #mes *{box-sizing:border-box!important}
+
   @media(max-width:1100px){
     #painelInt .pi-months{grid-template-columns:repeat(9,minmax(120px,1fr))!important;gap:16px!important;overflow-x:auto!important}
+    #mes{gap:14px!important;padding-left:12px!important;padding-right:12px!important}
+    #mes>*{flex-basis:120px!important;min-width:120px!important}
   }
   @media(max-width:700px){
     .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:5px!important}
@@ -38,10 +46,12 @@ window.p6 = null;
     .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:34px!important}
     #painelInt .pi-months{grid-template-columns:repeat(9,120px)!important;grid-template-rows:1fr!important;gap:16px!important;height:230px!important;min-height:230px!important;padding:28px 12px 10px!important;overflow-x:auto!important}
     #painelInt .pi-month{height:190px!important;min-width:120px!important}
+    #mes{gap:14px!important;padding:24px 10px 12px!important}
+    #mes>*{flex-basis:125px!important;min-width:125px!important}
   }
   `;
   const style=document.createElement('style');
-  style.id='dashboard-chart-enhancements-v4';
+  style.id='dashboard-chart-enhancements-v5';
   style.textContent=css;
   (document.head||document.documentElement).appendChild(style);
 })();
