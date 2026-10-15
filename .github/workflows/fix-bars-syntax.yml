@@ -18,10 +18,7 @@ jobs:
           from pathlib import Path
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-
-          # Corrige o parêntese extra caso alguma versão antiga ainda esteja presente.
           s = s.replace("}).join('')+'</div>'}).join('');", "}).join('')+'</div>';", 1)
-
           css = r'''
 /* GRÁFICOS — visualização aprimorada */
 .bars{display:flex;flex-direction:column;gap:12px;padding:2px 0 4px}
@@ -39,12 +36,10 @@ jobs:
 '''
           if '/* GRÁFICOS — visualização aprimorada */' not in s:
               s = s.replace('#loginScreen{', css + '\n#loginScreen{', 1)
-
           start = s.find('function bars(el,list,tot,prevList){')
           end = s.find('\nconst rank=', start)
           if start < 0 or end < 0:
               raise SystemExit('Função bars não localizada')
-
           new = r'''function bars(el,list,tot,prevList){
  const max=Math.max(...list.map(x=>Number(x[1])||0),1);
  const t=tot||list.reduce((a,b)=>a+(Number(b[1])||0),0)||1;
@@ -64,11 +59,30 @@ jobs:
           s = s[:start] + new + s[end:]
           p.write_text(s, encoding='utf-8')
           PY
+      - name: Corrigir gráfico mensal para 10 meses
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('supabase-config.js')
+          s = p.read_text(encoding='utf-8')
+          replacements = {
+            'repeat(9,minmax(110px,1fr))':'repeat(10,minmax(90px,1fr))',
+            'repeat(9,minmax(120px,1fr))':'repeat(10,minmax(90px,1fr))',
+            'repeat(9,120px)':'repeat(10,90px)',
+            'repeat(9,minmax(0,1fr))':'repeat(10,minmax(0,1fr))',
+            'repeat(9,minmax(90px,1fr))':'repeat(10,minmax(90px,1fr))',
+            'min-width:900px':'min-width:1000px'
+          }
+          for old,new in replacements.items():
+            s=s.replace(old,new)
+          p.write_text(s,encoding='utf-8')
+          PY
       - name: Commitar correção
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
+          git add index.html supabase-config.js
           git diff --cached --quiet && echo 'Sem alterações' && exit 0
-          git commit -m 'Melhorar visual dos gráficos do dashboard'
+          git commit -m 'Corrigir gráfico mensal da aba roubo a pedestre'
           git push
