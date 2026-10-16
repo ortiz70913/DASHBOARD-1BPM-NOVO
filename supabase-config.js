@@ -8,7 +8,8 @@ window.p6 = null;
   style.id='dashboard-chart-layout-final';
   style.textContent=`
     .bars{display:flex!important;flex-direction:column!important;width:100%!important;max-width:100%!important;gap:3px!important;padding:0!important;margin:0!important;box-sizing:border-box!important}
-    .bars .bar{display:grid!important;grid-template-columns:minmax(170px,25%) minmax(0,1fr)!important;grid-template-rows:26px 12px!important;gap:1px 9px!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:1px 0!important;margin:0!important;align-items:center!important;box-sizing:border-box!important}
+    /* Aproxima o grafico do nome em todos os graficos de barras. */
+    .bars .bar{display:grid!important;grid-template-columns:minmax(150px,22%) minmax(0,1fr)!important;grid-template-rows:26px 12px!important;gap:1px 4px!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:1px 0!important;margin:0!important;align-items:center!important;box-sizing:border-box!important}
     .bars .bar>b{grid-column:1!important;grid-row:1 / span 2!important;display:flex!important;align-items:center!important;gap:7px!important;width:100%!important;min-width:0!important;height:39px!important;overflow:hidden!important;white-space:nowrap!important;text-overflow:ellipsis!important;font-size:.84rem!important;line-height:1.1!important}
     .bars .bar>b .ranknum{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;min-width:27px!important;height:23px!important;border-radius:7px!important;background:var(--bg)!important;color:var(--mut)!important;border:1px solid var(--line)!important;font-size:.67rem!important;font-weight:800!important}
     .bars .bar:nth-child(1)>b .ranknum{background:#0b2545!important;color:#fff!important;border-color:#0b2545!important}
@@ -36,7 +37,7 @@ window.p6 = null;
     #p-mes #mes .coldelta{display:block!important;min-height:10px!important;font-size:.56rem!important;white-space:nowrap!important}
 
     @media(max-width:900px){
-      .bars .bar{grid-template-columns:minmax(130px,28%) minmax(0,1fr)!important}
+      .bars .bar{grid-template-columns:minmax(120px,24%) minmax(0,1fr)!important;gap:1px 4px!important}
       #painelInt .pi-months{height:175px!important;padding-top:20px!important}
       #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;padding-top:18px!important}
     }
