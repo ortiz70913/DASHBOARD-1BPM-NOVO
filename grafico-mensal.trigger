@@ -1,1 +1,1 @@
-Ajuste de proporcionalidade dos graficos do dashboard.
+Ajuste de proporcionalidade e compactacao dos graficos do dashboard - V2.
