@@ -25,11 +25,89 @@ jobs:
           s=s.replace('min-width:900px','min-width:1000px')
           marker='/* AJUSTE-PROPORCIONAL-GRAFICOS-V1 */'
           if marker not in s:
-              css='''\n/* AJUSTE-PROPORCIONAL-GRAFICOS-V1 */\n(function(){\n  const style=document.createElement('style');\n  style.textContent=`\n    .bars{width:100%!important;max-width:100%!important;gap:clamp(7px,1vw,11px)!important;padding:2px 0 3px!important}\n    .bars .bar{width:100%!important;min-width:0!important;grid-template-columns:minmax(120px,31%) minmax(0,1fr)!important;gap:clamp(7px,1vw,11px)!important;padding:2px 0!important}\n    .bars .bar>div{min-width:0!important;width:100%!important;height:clamp(22px,2.5vw,26px)!important}\n    .bars .bar>b{min-width:0!important;max-width:100%!important}\n    #painelInt .pi-months{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(170px,21vw,225px)!important;padding:28px clamp(8px,1.2vw,16px) 7px!important;overflow:hidden!important}\n    #painelInt .pi-month{min-width:0!important;width:100%!important;height:100%!important}\n    #painelInt .pi-bar{width:clamp(24px,65%,58px)!important;max-width:58px!important}\n    #painelInt .pi-month small{font-size:clamp(.58rem,.65vw,.70rem)!important}\n    #p-mes #mes,#p-mes #mes.monthly-chart-fixed{width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;padding:0 6px 5px!important}\n    #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(145px,18vw,185px)!important;padding:24px 0 0!important;margin:0!important;box-sizing:border-box!important}\n    #p-mes #mes>.cols>.col,#p-mes #mes.monthly-chart-fixed>.cols>.col{min-width:0!important;width:100%!important;height:100%!important}\n    #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:clamp(18px,52%,58px)!important;max-width:58px!important;min-width:14px!important}\n    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{font-size:clamp(.60rem,.7vw,.72rem)!important;margin-top:5px!important}\n    #p-mes #mes>.lab{width:100%!important;min-width:0!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important}\n    #painelInt .pi-months,#p-mes #mes{box-sizing:border-box!important}\n    #painelInt .pi-bar b{top:-20px!important;font-size:clamp(.65rem,.72vw,.78rem)!important}\n    #p-mes #mes>.cols>.col em,#p-mes #mes.monthly-chart-fixed>.cols>.col em{font-size:clamp(.62rem,.7vw,.75rem)!important;margin-bottom:3px!important}\n    @media(max-width:900px){\n      .bars .bar{grid-template-columns:minmax(105px,35%) minmax(0,1fr)!important}\n      #painelInt .pi-months{height:175px!important;gap:5px!important;padding-left:4px!important;padding-right:4px!important}\n      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;gap:5px!important;padding-top:22px!important}\n    }\n    @media(max-width:600px){\n      .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:4px!important}\n      .bars .bar>b{grid-column:1!important;grid-row:1!important}\n      .bars .bar>div{grid-column:1!important;grid-row:2!important}\n      .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:28px!important}\n      #painelInt .pi-months{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:165px!important;gap:3px!important}\n      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:150px!important;gap:3px!important}\n      #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:58%!important;min-width:10px!important}\n    }\n  `;\n  document.head.appendChild(style);\n})();\n'''
+              css='''
+/* AJUSTE-PROPORCIONAL-GRAFICOS-V1 */
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`
+    .bars{width:100%!important;max-width:100%!important;gap:clamp(3px,.5vw,6px)!important;padding:0!important}
+    .bars .bar{width:100%!important;min-width:0!important;grid-template-columns:220px minmax(0,1fr)!important;gap:1px 4px!important;padding:1px 0!important}
+    .bars .bar>div{min-width:0!important;width:100%!important;height:24px!important}
+    .bars .bar>b{min-width:0!important;max-width:220px!important}
+    #painelInt .pi-months{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(170px,21vw,225px)!important;padding:28px clamp(8px,1.2vw,16px) 7px!important;overflow:hidden!important}
+    #painelInt .pi-month{min-width:0!important;width:100%!important;height:100%!important}
+    #painelInt .pi-bar{width:clamp(24px,65%,58px)!important;max-width:58px!important}
+    #painelInt .pi-month small{font-size:clamp(.58rem,.65vw,.70rem)!important}
+    #p-mes #mes,#p-mes #mes.monthly-chart-fixed{width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;padding:0 6px 5px!important}
+    #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{width:100%!important;min-width:0!important;max-width:100%!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important;height:clamp(145px,18vw,185px)!important;padding:24px 0 0!important;margin:0!important;box-sizing:border-box!important}
+    #p-mes #mes>.cols>.col,#p-mes #mes.monthly-chart-fixed>.cols>.col{min-width:0!important;width:100%!important;height:100%!important}
+    #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:clamp(18px,52%,58px)!important;max-width:58px!important;min-width:14px!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{font-size:clamp(.60rem,.7vw,.72rem)!important;margin-top:5px!important}
+    #p-mes #mes>.lab{width:100%!important;min-width:0!important;grid-template-columns:repeat(10,minmax(0,1fr))!important;gap:clamp(5px,1vw,12px)!important}
+    #painelInt .pi-months,#p-mes #mes{box-sizing:border-box!important}
+    #painelInt .pi-bar b{top:-20px!important;font-size:clamp(.65rem,.72vw,.78rem)!important}
+    #p-mes #mes>.cols>.col em,#p-mes #mes.monthly-chart-fixed>.cols>.col em{font-size:clamp(.62rem,.7vw,.75rem)!important;margin-bottom:3px!important}
+    @media(max-width:900px){
+      .bars .bar{grid-template-columns:190px minmax(0,1fr)!important}
+      .bars .bar>b{max-width:190px!important}
+      #painelInt .pi-months{height:175px!important;gap:5px!important;padding-left:4px!important;padding-right:4px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;gap:5px!important;padding-top:22px!important}
+    }
+    @media(max-width:600px){
+      .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto auto auto!important;gap:4px!important}
+      .bars .bar>b{grid-column:1!important;grid-row:1!important;max-width:100%!important}
+      .bars .bar>div{grid-column:1!important;grid-row:2!important}
+      .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:28px!important}
+      #painelInt .pi-months{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:165px!important;gap:3px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{grid-template-columns:repeat(10,minmax(0,1fr))!important;height:150px!important;gap:3px!important}
+      #p-mes #mes>.cols>.col i,#p-mes #mes.monthly-chart-fixed>.cols>.col i{width:58%!important;min-width:10px!important}
+    }
+  `;
+  document.head.appendChild(style);
+})();
+'''
               s += css
           compact_marker='/* AJUSTE-COMPACTO-GRAFICOS-V2 */'
           if compact_marker not in s:
-              css2='''\n/* AJUSTE-COMPACTO-GRAFICOS-V2 */\n(function(){\n  const style=document.createElement('style');\n  style.id='dashboard-chart-compact-v2';\n  style.textContent=`\n    /* Barras de ranking: elimina alturas e intervalos artificiais entre registros. */\n    .bars{gap:3px!important;padding:0!important;margin:0!important}\n    .bars .bar{grid-template-columns:minmax(170px,25%) minmax(0,1fr)!important;grid-template-rows:26px 12px!important;gap:1px 9px!important;padding:1px 0!important;min-height:0!important;height:auto!important;margin:0!important;align-items:center!important}\n    .bars .bar>b{grid-column:1!important;grid-row:1 / span 2!important;height:39px!important;align-items:center!important;line-height:1.1!important}\n    .bars .bar>div{grid-column:2!important;grid-row:1!important;height:24px!important;min-height:24px!important;margin:0!important}\n    .bars .bar .bardelta{grid-column:2!important;grid-row:2!important;height:12px!important;min-height:0!important;line-height:12px!important;margin:0!important;padding:0!important;font-size:.60rem!important;white-space:nowrap!important}\n    .bars .bar>div em{font-size:.68rem!important;padding:1px 6px!important}\n    .bars .bar>b .ranknum{min-width:27px!important;height:23px!important}\n\n    /* Gráficos mensais: reduzem apenas a área excedente, preservando valores e rótulos. */\n    #painelInt .pi-months{height:190px!important;padding:22px 8px 6px!important;gap:clamp(4px,.7vw,9px)!important;margin-top:2px!important}\n    #painelInt .pi-month{height:100%!important}\n    #painelInt .pi-month small{margin-top:4px!important}\n    #painelInt .pi-bar b{top:-18px!important}\n    #p-mes #mes,#p-mes #mes.monthly-chart-fixed{padding:0 4px 3px!important}\n    #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:165px!important;padding-top:18px!important;gap:clamp(4px,.7vw,9px)!important}\n    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{margin-top:3px!important;height:17px!important;line-height:17px!important}\n\n    @media(max-width:900px){\n      .bars .bar{grid-template-columns:minmax(130px,28%) minmax(0,1fr)!important}\n      #painelInt .pi-months{height:175px!important;padding-top:20px!important}\n      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;padding-top:18px!important}\n    }\n    @media(max-width:600px){\n      .bars{gap:4px!important}\n      .bars .bar{grid-template-columns:1fr!important;grid-template-rows:22px 23px 11px!important;gap:2px!important;padding:1px 0!important}\n      .bars .bar>b{grid-column:1!important;grid-row:1!important;height:22px!important}\n      .bars .bar>div{grid-column:1!important;grid-row:2!important;height:22px!important;min-height:22px!important}\n      .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;height:11px!important;line-height:11px!important;margin-left:27px!important}\n      #painelInt .pi-months{height:165px!important}\n      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:150px!important}\n    }\n  `;\n  document.head.appendChild(style);\n})();\n'''
+              css2='''
+/* AJUSTE-COMPACTO-GRAFICOS-V2 */
+(function(){
+  const style=document.createElement('style');
+  style.id='dashboard-chart-compact-v2';
+  style.textContent=`
+    .bars{gap:3px!important;padding:0!important;margin:0!important}
+    .bars .bar{grid-template-columns:220px minmax(0,1fr)!important;grid-template-rows:26px 12px!important;gap:1px 4px!important;padding:1px 0!important;min-height:0!important;height:auto!important;margin:0!important;align-items:center!important}
+    .bars .bar>b{grid-column:1!important;grid-row:1 / span 2!important;height:39px!important;align-items:center!important;line-height:1.1!important;max-width:220px!important}
+    .bars .bar>div{grid-column:2!important;grid-row:1!important;height:24px!important;min-height:24px!important;margin:0!important}
+    .bars .bar .bardelta{grid-column:2!important;grid-row:2!important;height:12px!important;min-height:0!important;line-height:12px!important;margin:0!important;padding:0!important;font-size:.60rem!important;white-space:nowrap!important}
+    .bars .bar>div em{font-size:.68rem!important;padding:1px 6px!important}
+    .bars .bar>b .ranknum{min-width:27px!important;height:23px!important}
+    #painelInt .pi-months{height:190px!important;padding:22px 8px 6px!important;gap:clamp(4px,.7vw,9px)!important;margin-top:2px!important}
+    #painelInt .pi-month{height:100%!important}
+    #painelInt .pi-month small{margin-top:4px!important}
+    #painelInt .pi-bar b{top:-18px!important}
+    #p-mes #mes,#p-mes #mes.monthly-chart-fixed{padding:0 4px 3px!important}
+    #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:165px!important;padding-top:18px!important;gap:clamp(4px,.7vw,9px)!important}
+    #p-mes #mes.monthly-chart-fixed>.cols>.col .month-label{margin-top:3px!important;height:17px!important;line-height:17px!important}
+    @media(max-width:900px){
+      .bars .bar{grid-template-columns:190px minmax(0,1fr)!important}
+      .bars .bar>b{max-width:190px!important}
+      #painelInt .pi-months{height:175px!important;padding-top:20px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:155px!important;padding-top:18px!important}
+    }
+    @media(max-width:600px){
+      .bars{gap:4px!important}
+      .bars .bar{grid-template-columns:1fr!important;grid-template-rows:22px 23px 11px!important;gap:2px!important;padding:1px 0!important}
+      .bars .bar>b{grid-column:1!important;grid-row:1!important;height:22px!important;max-width:100%!important}
+      .bars .bar>div{grid-column:1!important;grid-row:2!important;height:22px!important;min-height:22px!important}
+      .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;height:11px!important;line-height:11px!important;margin-left:27px!important}
+      #painelInt .pi-months{height:165px!important}
+      #p-mes #mes>.cols,#p-mes #mes.monthly-chart-fixed>.cols{height:150px!important}
+    }
+  `;
+  document.head.appendChild(style);
+})();
+'''
               s += css2
           p.write_text(s,encoding='utf-8')
           PY
