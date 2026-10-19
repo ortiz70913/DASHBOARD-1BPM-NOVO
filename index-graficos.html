@@ -22,7 +22,31 @@ const css=`
 function num(t){const m=String(t||'').replace(/\./g,'').match(/\d+(?:,\d+)?/);return m?parseFloat(m[0].replace(',','.')):0}
 function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
 function ranking(d,id){const s=d.querySelector(id),src=s&&s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;let c=s.querySelector('.big-chart');if(!c){c=d.createElement('div');c.className='big-chart';src.parentNode.insertBefore(c,src)}const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:num(r.textContent),percent:pct(r.textContent)})).filter(x=>x.name),max=Math.max(1,...data.map(x=>x.count));c.innerHTML=data.map(x=>`<div class="big-chart-row"><div class="big-chart-name">${x.name}</div><div class="big-chart-track"><div class="big-chart-fill" style="width:${x.count?Math.max(3,x.count/max*100):0}%"></div></div><div class="big-chart-value">${x.count} · ${x.percent.toFixed(1).replace('.',',')}%</div></div>`).join('');src.style.display='none'}
-function cia(d){const s=d.querySelector('#p-cia');if(!s)return;const rows=[...s.querySelectorAll('.ciarow')];if(!rows.length)return;let c=s.querySelector('.big-chart');if(!c){c=d.createElement('div');c.className='big-chart';rows[0].parentNode.insertBefore(c,rows[0])}const data=rows.map(r=>({name:r.querySelector('.hbname')?.textContent.trim()||'',count:num(r.querySelector('.hb > b')?.textContent||'')})).filter(x=>x.name),max=Math.max(1,...data.map(x=>x.count));c.innerHTML=data.map(x=>`<div class="big-chart-row"><div class="big-chart-name">${x.name}</div><div class="big-chart-track"><div class="big-chart-fill" style="width:${x.count?Math.max(3,x.count/max*100):0}%"></div></div><div class="big-chart-value">${x.count} ocorrência${x.count===1?'':'s'}</div></div>`).join('');rows.forEach(r=>r.style.display='none')}
+function cia(d){
+  const s=d.querySelector('#p-cia');
+  if(!s)return;
+  if(s.dataset.ciaOnlyChart==='1')return;
+  const rows=[...s.querySelectorAll('.ciarow')];
+  if(rows.length<3)return;
+  const wanted=['2ª CIA','1ª CIA','3ª CIA'];
+  const data=wanted.map(name=>{
+    const r=rows.find(x=>x.textContent.replace(/\s+/g,' ').toLowerCase().includes(name.toLowerCase()));
+    if(!r)return null;
+    const text=r.textContent.replace(/\s+/g,' ').trim();
+    const b=r.querySelector('.hb > b');
+    return {name,count:b?num(b.textContent):num(text),percent:pct(text)};
+  }).filter(Boolean);
+  if(data.length!==3)return;
+  const max=Math.max(1,...data.map(x=>x.count));
+  const c=d.createElement('div');
+  c.className='big-chart';
+  c.dataset.chartKey='cia-only';
+  c.innerHTML=data.map(x=>`<div class="big-chart-row"><div class="big-chart-name">${x.name}</div><div class="big-chart-track"><div class="big-chart-fill" style="width:${Math.max(3,x.count/max*100)}%"></div></div><div class="big-chart-value">${x.count} · ${x.percent.toFixed(1).replace('.',',')}%</div></div>`).join('');
+  // A partir daqui, o painel de incidência por CIA passa a conter SOMENTE o gráfico.
+  s.innerHTML='';
+  s.appendChild(c);
+  s.dataset.ciaOnlyChart='1';
+}
 function fix(){const f=document.getElementById('dash');try{const d=f.contentDocument;if(!d||!d.head||!d.body)return;if(!d.getElementById('big-chart-css')){const st=d.createElement('style');st.id='big-chart-css';st.textContent=css;d.head.appendChild(st)}ranking(d,'#p-orcrim-vitima');ranking(d,'#p-orcrim-autores');cia(d)}catch(e){}}
 document.getElementById('dash').addEventListener('load',()=>{fix();setTimeout(fix,500);setTimeout(fix,1500);setTimeout(fix,3000)});
 setInterval(fix,2000);
