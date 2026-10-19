@@ -2,6 +2,12 @@ window.SUPABASE_URL = 'https://rbpuatcdlbfqxfkbvgst.supabase.co';
 window.SUPABASE_ANON_KEY = 'sb_publishable_AH0rCyKZ4J5SMfMwof3TkA_wkTXeg9D';
 window.p6 = null;
 
+/* Fallback da biblioteca Supabase: o login não deve depender apenas do jsDelivr. */
+(function(){
+  if(window.supabase && typeof window.supabase.createClient==='function') return;
+  document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\\/script>');
+})();
+
 /* AJUSTE DIRETO DOS GRAFICOS - nome e barra proporcionais ao espaco real */
 (function(){
   const style=document.createElement('style');
