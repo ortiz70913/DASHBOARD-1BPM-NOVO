@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard 1º BPM — Incidência por companhia</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}
+iframe{width:100%;height:100%;border:0;display:block}
+</style>
+</head>
+<body>
+<iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
+<script>
+const frame=document.getElementById('dash');
+const norm=s=>String(s||'').replace(/\s+/g,' ').trim().toLowerCase();
+const pctOf=t=>{const m=String(t).match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0};
+const countOf=t=>{const s=String(t);const pm=s.match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?s.slice(0,pm.index):s;const nums=before.match(/\d+/g)||[];return nums.length?parseInt(nums[nums.length-1],10):0};
+function css(doc){if(doc.getElementById('cia-final-css'))return;const st=doc.createElement('style');st.id='cia-final-css';st.textContent=`
+.cia-final-chart{display:flex!important;flex-direction:column!important;gap:14px!important;width:100%!important;margin:14px 0 18px!important}
+.cia-final-row{display:grid!important;grid-template-columns:220px minmax(220px,1fr) 110px!important;gap:12px!important;align-items:center!important;min-height:34px!important}
+.cia-final-name{font-weight:800!important;font-size:.9rem!important;color:#10233d!important}
+.cia-final-track{height:24px!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important}
+.cia-final-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
+.cia-final-value{font-weight:900!important;font-size:.85rem!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
+.cia-original-hidden{display:none!important}
+@media(max-width:700px){.cia-final-row{grid-template-columns:1fr!important;gap:5px!important}.cia-final-value{text-align:left!important}.cia-final-track{height:21px!important}}
+`;doc.head.appendChild(st)}
+function findPanel(doc,h){let p=h.parentElement;for(let i=0;i<12&&p;i++,p=p.parentElement){const t=norm(p.textContent);if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia')&&t.includes('novo registro'))return p}return h.parentElement}
+function rowsFromCia(panel){
+ const rows=[...panel.querySelectorAll('.ciarow')];
+ if(rows.length){return rows.map(r=>{const t=r.textContent.replace(/\s+/g,' ').trim();const m=t.match(/\b(2ª|1ª|3ª)\s*cia\b/i);return m?{name:m[0].toUpperCase(),count:countOf(t),pct:pctOf(t),el:r}:null}).filter(x=>x&&x.count>0&&x.pct>0)}
+ const found=[];
+ for(const name of ['2ª CIA','1ª CIA','3ª CIA']){
+   const els=[...panel.querySelectorAll('*')].filter(e=>{const t=e.textContent.replace(/\s+/g,' ').trim();return norm(t).includes(norm(name))&&/novo registro/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)&&t.length<220}).sort((a,b)=>a.textContent.length-b.textContent.length);
+   if(els.length){const e=els[0],t=e.textContent.replace(/\s+/g,' ').trim();found.push({name,count:countOf(t),pct:pctOf(t),el:e})}
+ }
+ return found.filter(x=>x.count>0&&x.pct>0);
+}
+function hideOriginal(panel,rows){
+ // Prefer the real dashboard row class. This removes only the old text rows.
+ panel.querySelectorAll('.ciarow').forEach(r=>r.classList.add('cia-original-hidden'));
+ // Fallback for rows without .ciarow: hide the smallest element that contains one CIA + one percentage + Novo registro.
+ const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.closest('.cia-final-chart'))return false;const t=e.textContent.replace(/\s+/g,' ').trim();return /novo registro/i.test(t)&&/\b(?:1ª|2ª|3ª)\s*cia\b/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)&&t.length<220}).sort((a,b)=>a.textContent.length-b.textContent.length);
+ for(const e of candidates){
+   if(e.closest('.cia-final-chart'))continue;
+   const t=e.textContent.replace(/\s+/g,' ').trim();
+   if((t.match(/\b(?:1ª|2ª|3ª)\s*cia\b/gi)||[]).length!==1)continue;
+   if(e.children.length===0){e.classList.add('cia-original-hidden');continue}
+   let p=e;for(let i=0;i<5&&p&&p!==panel;i++,p=p.parentElement){const pt=p.textContent.replace(/\s+/g,' ').trim();if(pt.length<220&&(pt.match(/\b(?:1ª|2ª|3ª)\s*cia\b/gi)||[]).length===1&&/novo registro/i.test(pt)){p.classList.add('cia-original-hidden');break}}
+ }
+}
+function run(doc){
+ if(!doc||!doc.body)return;
+ css(doc);
+ const h=[...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)==='incidência por companhia');
+ if(!h)return;
+ const panel=findPanel(doc,h);
+ if(panel.querySelector('.cia-final-chart'))return;
+ const data=rowsFromCia(panel);
+ if(data.length!==3)return;
+ const order={'2ª CIA':0,'1ª CIA':1,'3ª CIA':2};data.sort((a,b)=>(order[a.name]??9)-(order[b.name]??9));
+ const max=Math.max(...data.map(x=>x.count));
+ const chart=doc.createElement('div');chart.className='cia-final-chart';
+ chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return `<div class="cia-final-row"><div class="cia-final-name">${x.name}</div><div class="cia-final-track"><div class="cia-final-fill" style="width:${w}%"></div></div><div class="cia-final-value">${x.count} · ${x.pct.toFixed(1).replace('.',',')}%</div></div>`}).join('');
+ h.parentNode.insertBefore(chart,h.nextSibling);
+ hideOriginal(panel,data);
+ // Second pass after layout/render, still preserving the chart.
+ setTimeout(()=>hideOriginal(panel,data),100);
+ setTimeout(()=>hideOriginal(panel,data),500);
+}
+frame.addEventListener('load',()=>{const runNow=()=>{try{run(frame.contentDocument)}catch(e){}};runNow();setTimeout(runNow,700);setTimeout(runNow,1600);setTimeout(runNow,3000);try{const d=frame.contentDocument;const mo=new MutationObserver(()=>{clearTimeout(window.__ciaFinal);window.__ciaFinal=setTimeout(runNow,250)});mo.observe(d.body,{childList:true,subtree:true})}catch(e){}});
+</script>
+</body>
+</html>
