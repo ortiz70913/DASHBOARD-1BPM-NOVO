@@ -1,0 +1,216 @@
+name: Melhorar apresentação ORCRIM e companhia
+
+on:
+  push:
+    paths:
+      - '.github/workflows/melhorar-orcrim-cia.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar melhoria visual
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('supabase-config.js')
+          s = p.read_text(encoding='utf-8')
+          marker = 'dashboard-orcrim-cia-visual-v1'
+          if marker in s:
+              print('Correção já aplicada.')
+              raise SystemExit(0)
+
+          css = r'''
+
+/* dashboard-orcrim-cia-visual-v1 */
+(function(){
+  const style=document.createElement('style');
+  style.id='dashboard-orcrim-cia-visual-v1';
+  style.textContent=`
+    /* ORCRIM: transformar os rankings em barras horizontais legíveis */
+    #p-orcrim-vitima .bars,
+    #p-orcrim-autores .bars{
+      width:100%!important;
+      gap:8px!important;
+      margin-top:5px!important;
+    }
+    #p-orcrim-vitima .bars .bar,
+    #p-orcrim-autores .bars .bar{
+      display:grid!important;
+      grid-template-columns:minmax(145px,30%) minmax(0,1fr)!important;
+      grid-template-rows:25px 13px!important;
+      column-gap:10px!important;
+      row-gap:2px!important;
+      min-height:40px!important;
+      padding:2px 0!important;
+      align-items:center!important;
+    }
+    #p-orcrim-vitima .bars .bar>b,
+    #p-orcrim-autores .bars .bar>b{
+      grid-column:1!important;
+      grid-row:1 / span 2!important;
+      width:100%!important;
+      max-width:none!important;
+      height:38px!important;
+      display:flex!important;
+      align-items:center!important;
+      gap:7px!important;
+      font-size:.82rem!important;
+      overflow:hidden!important;
+      white-space:nowrap!important;
+      text-overflow:ellipsis!important;
+    }
+    #p-orcrim-vitima .bars .bar>div,
+    #p-orcrim-autores .bars .bar>div{
+      grid-column:2!important;
+      grid-row:1!important;
+      position:relative!important;
+      width:100%!important;
+      height:20px!important;
+      min-height:20px!important;
+      background:#e7edf4!important;
+      border:1px solid var(--line)!important;
+      border-radius:7px!important;
+      overflow:hidden!important;
+    }
+    #p-orcrim-vitima .bars .bar>div>i,
+    #p-orcrim-autores .bars .bar>div>i{
+      display:block!important;
+      height:100%!important;
+      min-width:3px!important;
+      background:linear-gradient(90deg,var(--acc),var(--hi))!important;
+      border-radius:6px!important;
+    }
+    #p-orcrim-vitima .bars .bar:first-child>div>i,
+    #p-orcrim-autores .bars .bar:first-child>div>i{
+      background:linear-gradient(90deg,var(--hi),#4f78a8)!important;
+    }
+    #p-orcrim-vitima .bars .bar>div>em,
+    #p-orcrim-autores .bars .bar>div>em{
+      position:absolute!important;
+      right:7px!important;
+      top:50%!important;
+      transform:translateY(-50%)!important;
+      font-style:normal!important;
+      font-size:.68rem!important;
+      font-weight:800!important;
+      color:var(--ink)!important;
+      background:rgba(255,255,255,.88)!important;
+      padding:1px 6px!important;
+      border-radius:5px!important;
+      white-space:nowrap!important;
+      z-index:3!important;
+    }
+    #p-orcrim-vitima .bars .bar .bardelta,
+    #p-orcrim-autores .bars .bar .bardelta{
+      grid-column:2!important;
+      grid-row:2!important;
+      width:100%!important;
+      height:13px!important;
+      line-height:13px!important;
+      margin:0!important;
+      font-size:.57rem!important;
+    }
+
+    /* INCIDÊNCIA POR COMPANHIA: linha limpa com nome, barra e valor */
+    #p-cia .ciarow{
+      width:100%!important;
+      margin:4px 0 9px!important;
+      padding:2px 0!important;
+    }
+    #p-cia .ciarow .hb{
+      display:grid!important;
+      grid-template-columns:100px minmax(0,1fr) 86px!important;
+      gap:9px!important;
+      align-items:center!important;
+      width:100%!important;
+      min-height:24px!important;
+      margin:0!important;
+    }
+    #p-cia .ciarow .hbname{
+      font-weight:800!important;
+      font-size:.82rem!important;
+      min-width:0!important;
+      overflow:hidden!important;
+      text-overflow:ellipsis!important;
+      white-space:nowrap!important;
+    }
+    #p-cia .ciarow .hb > div{
+      position:relative!important;
+      display:block!important;
+      width:100%!important;
+      height:15px!important;
+      min-height:15px!important;
+      background:#e7edf4!important;
+      border:1px solid var(--line)!important;
+      border-radius:8px!important;
+      overflow:hidden!important;
+    }
+    #p-cia .ciarow .hb > div > i{
+      display:block!important;
+      width:100%!important;
+      height:100%!important;
+      min-width:3px!important;
+      background:linear-gradient(90deg,var(--acc),var(--hi))!important;
+      border-radius:7px!important;
+    }
+    #p-cia .ciarow .hb > b{
+      font-size:.78rem!important;
+      font-weight:800!important;
+      text-align:right!important;
+      white-space:nowrap!important;
+      color:var(--ink)!important;
+    }
+    #p-cia .ciarow:nth-child(1) .hb > div > i{
+      background:linear-gradient(90deg,var(--hi),#4f78a8)!important;
+    }
+
+    @media(max-width:700px){
+      #p-orcrim-vitima .bars .bar,
+      #p-orcrim-autores .bars .bar{
+        grid-template-columns:minmax(115px,36%) minmax(0,1fr)!important;
+        column-gap:6px!important;
+      }
+      #p-cia .ciarow .hb{
+        grid-template-columns:78px minmax(0,1fr) 72px!important;
+        gap:6px!important;
+      }
+    }
+    @media(max-width:500px){
+      #p-orcrim-vitima .bars .bar,
+      #p-orcrim-autores .bars .bar{
+        grid-template-columns:1fr!important;
+        grid-template-rows:21px 20px 12px!important;
+        gap:2px!important;
+      }
+      #p-orcrim-vitima .bars .bar>b,
+      #p-orcrim-autores .bars .bar>b{grid-column:1!important;grid-row:1!important;height:21px!important}
+      #p-orcrim-vitima .bars .bar>div,
+      #p-orcrim-autores .bars .bar>div{grid-column:1!important;grid-row:2!important}
+      #p-orcrim-vitima .bars .bar .bardelta,
+      #p-orcrim-autores .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;margin-left:27px!important}
+      #p-cia .ciarow .hb{grid-template-columns:68px minmax(0,1fr) 68px!important;gap:5px!important}
+    }
+  `;
+  document.head.appendChild(style);
+})();
+'''
+          s += css
+          p.write_text(s, encoding='utf-8')
+          print('Melhoria visual adicionada.')
+
+      - name: Commitar
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supabase-config.js
+          git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
+          git commit -m 'Melhorar apresentação de ORCRIM e companhia [skip ci]'
+          git push
