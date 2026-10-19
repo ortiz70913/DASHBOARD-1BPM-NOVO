@@ -4,119 +4,32 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard 1º BPM — Gráficos</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}
-iframe{width:100%;height:100%;border:0;display:block}
-</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
 </head>
 <body>
 <iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
 <script>
 const css=`
-.roubo-bar-chart{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;margin:14px 0!important;padding:0!important}
-.roubo-bar-row{display:grid!important;grid-template-columns:220px minmax(220px,1fr) 110px!important;gap:12px!important;align-items:center!important;width:100%!important;min-height:36px!important}
-.roubo-bar-name{font-size:.88rem!important;font-weight:800!important;color:#10233d!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.roubo-bar-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important}
-.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
-.roubo-bar-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
+.big-chart,.roubo-bar-chart{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;margin:14px 0!important;padding:0!important}
+.big-chart-row,.roubo-bar-row{display:grid!important;grid-template-columns:220px minmax(220px,1fr) 110px!important;gap:12px!important;align-items:center!important;width:100%!important;min-height:36px!important}
+.big-chart-name,.roubo-bar-name{font-size:.88rem!important;font-weight:800!important;color:#10233d!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.big-chart-track,.roubo-bar-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important}
+.big-chart-fill,.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
+.big-chart-value,.roubo-bar-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
 .roubo-source-hidden{display:none!important}
-@media(max-width:900px){.roubo-bar-row{grid-template-columns:170px minmax(140px,1fr) 95px!important;gap:8px!important}}
-@media(max-width:600px){.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.roubo-bar-value{text-align:left!important}.roubo-bar-track{height:21px!important}}
+@media(max-width:900px){.big-chart-row,.roubo-bar-row{grid-template-columns:170px minmax(140px,1fr) 95px!important;gap:8px!important}}
+@media(max-width:600px){.big-chart-row,.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.big-chart-value,.roubo-bar-value{text-align:left!important}.big-chart-track,.roubo-bar-track{height:21px!important}}
 `;
-const configs=[
- {title:'arma utilizada',anchor:'arma de fogo'},
- {title:'local do fato',anchor:'farmácia'},
- {title:'meio utilizado / modo de abordagem',anchor:'a pé'},
- {title:'modo de abordagem',anchor:'a pé'},
- {title:'estabelecimento',anchor:'farmácia são joão'},
- {title:'tipo de roubo (próprio ou impróprio)',anchor:'próprio'},
- {title:'logradouro',anchor:'av. praia de belas'}
-];
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
-function getPercent(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
-function getCount(t){const text=String(t||'');const pm=text.match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?text.slice(0,pm.index):text;const nums=before.match(/\d+/g)||[];return nums.length>=2?parseInt(nums[nums.length-1],10)||0:0}
-function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||null}
-function findSource(heading,cfg){let node=heading.parentElement;for(let level=0;level<12&&node;level++,node=node.parentElement){const sources=[...node.querySelectorAll('.bars')];const hit=sources.filter(s=>s.querySelectorAll('.bar').length>=2).find(s=>norm(s.textContent).includes(cfg.anchor));if(hit)return hit}return null}
-function buildChart(doc,heading,data,key){if(!data.length)return null;const panel=heading.parentElement;if(panel.querySelector('.roubo-bar-chart[data-roubo-chart="'+key+'"]'))return null;const max=Math.max(...data.map(x=>x.count),1);const chart=doc.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart=key;chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');heading.parentNode.insertBefore(chart,heading.nextSibling);return chart}
-function makeChart(doc,heading,source,key){const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');const name=String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:getCount(r.textContent),pct:getPercent(r.textContent)}}).filter(x=>x.name&&x.count>0&&x.pct>0);const chart=buildChart(doc,heading,data,key);if(chart)source.classList.add('roubo-source-hidden')}
-function findCiaHeading(doc){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)==='incidência por companhia')||null;}
-function extractCiaRows(panel){
-  const names=['2ª cia','1ª cia','3ª cia'];
-  const result=[];
-  for(const name of names){
-    const candidates=[...panel.querySelectorAll('*')].filter(e=>{
-      if(e.closest('.roubo-cia-chart')) return false;
-      const t=norm(e.textContent);
-      return t.includes(name) && /\d+(?:[.,]\d+)?\s*%/.test(t) && t.length<=260;
-    }).sort((a,b)=>a.textContent.length-b.textContent.length);
-    if(!candidates.length) continue;
-    const e=candidates[0];
-    const t=e.textContent.replace(/\s+/g,' ').trim();
-    const pm=t.match(/(\d+(?:[.,]\d+)?)\s*%/);
-    if(!pm) continue;
-    const before=t.slice(0,pm.index);
-    const nums=before.match(/\d+/g)||[];
-    const count=nums.length?parseInt(nums[nums.length-1],10):0;
-    if(count<=0) continue;
-    result.push({name:name.toUpperCase(),count,pct:parseFloat(pm[1].replace(',','.')),source:e});
-  }
-  return result;
-}
-
-// Esconde somente o(s) bloco(s) original(is) de texto que contêm "Novo registro".
-// A busca sobe apenas até o filho direto do painel da Incidência por companhia.
-// Assim o gráfico criado permanece intacto e a descrição final também permanece.
-function hideCiaOriginalRows(panel,chart){
-  const direct=[];
-  [...panel.querySelectorAll('*')].forEach(el=>{
-    if(el===chart || el.closest('.roubo-cia-chart')) return;
-    const t=(el.textContent||'').replace(/\s+/g,' ').trim();
-    if(!/novo registro/i.test(t)) return;
-    if(!/(?:1ª|2ª|3ª)\s*cia/i.test(t)) return;
-    if(!/\d+(?:[.,]\d+)?\s*%/.test(t)) return;
-    let top=el;
-    while(top.parentElement && top.parentElement!==panel) top=top.parentElement;
-    if(top.parentElement===panel && top!==chart && !direct.includes(top)) direct.push(top);
-  });
-  direct.forEach(el=>el.classList.add('roubo-source-hidden'));
-}
-
-function makeCiaChart(doc){
-  if(doc.querySelector('.roubo-cia-chart')) return;
-  const heading=findCiaHeading(doc); if(!heading)return;
-  let panel=heading.parentElement;
-  for(let i=0;i<12&&panel;i++,panel=panel.parentElement){
-    const t=norm(panel.textContent);
-    if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia')) break;
-  }
-  if(!panel)return;
-  const data=extractCiaRows(panel);
-  if(data.length!==3)return;
-  const max=Math.max(...data.map(x=>x.count),1);
-  const chart=doc.createElement('div');
-  chart.className='roubo-bar-chart roubo-cia-chart';
-  chart.dataset.rouboChart='cia';
-  chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
-  heading.parentNode.insertBefore(chart,heading.nextSibling);
-  // Somente depois que o gráfico existe, remove os blocos originais.
-  hideCiaOriginalRows(panel,chart);
-}
-
-function process(doc){
-  if(!doc||!doc.body)return;
-  if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}
-  configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});
-  makeCiaChart(doc);
-}
-const frame=document.getElementById('dash');
-frame.addEventListener('load',()=>{
-  const run=()=>{try{process(frame.contentDocument)}catch(e){}};
-  run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);
-  try{
-    const d=frame.contentDocument;
-    if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true});}
-  }catch(e){}
-});
+function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
+function count(t){const pm=String(t||'').match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?String(t).slice(0,pm.index):String(t);const nums=before.match(/\d+/g)||[];return nums.length?parseInt(nums[nums.length-1],10)||0:0}
+function heading(d,title){return [...d.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)===norm(title))||null}
+function robberyChart(d,title,anchor,key){const h=heading(d,title);if(!h)return;let source=null,node=h.parentElement;for(let i=0;i<12&&node;i++,node=node.parentElement){const hit=[...node.querySelectorAll('.bars')].find(s=>norm(s.textContent).includes(norm(anchor))&&s.querySelectorAll('.bar').length>=2);if(hit){source=hit;break}}if(!source)return;if(d.querySelector('[data-chart-key="'+key+'"]'))return;const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');return{name:String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim(),count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>0);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');h.parentNode.insertBefore(c,h.nextSibling);source.classList.add('roubo-source-hidden')}
+function orcrim(d,id,key){const s=d.querySelector(id);if(!s||s.querySelector('[data-chart-key="'+key+'"]'))return;const src=s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:count(r.textContent),pct:pct(r.textContent)})).filter(x=>x.name);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.style.display='none'}
+function cia(d){if(d.querySelector('[data-chart-key="cia"]'))return;const h=heading(d,'Incidência por companhia');if(!h)return;let panel=h.parentElement;for(let i=0;i<12&&panel;i++,panel=panel.parentElement){const t=norm(panel.textContent);if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia'))break}if(!panel)return;const names=['2ª cia','1ª cia','3ª cia'],data=[];for(const name of names){const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.closest('.big-chart,.roubo-bar-chart'))return false;const t=norm(e.textContent);return t.includes(name)&&/novo registro/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)&&t.length<260}).sort((a,b)=>a.textContent.length-b.textContent.length);if(!candidates.length)continue;const t=candidates[0].textContent.replace(/\s+/g,' ').trim(),p=t.match(/(\d+(?:[.,]\d+)?)\s*%/);if(!p)continue;const n=(t.slice(0,p.index).match(/\d+/g)||[]);const c=n.length?parseInt(n[n.length-1],10):0;if(c>0)data.push({name:name.toUpperCase(),count:c,pct:parseFloat(p[1].replace(',','.'))})}if(data.length!==3)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey='cia';c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');h.parentNode.insertBefore(c,h.nextSibling);[...panel.querySelectorAll('*')].forEach(el=>{if(el===c||el.closest('[data-chart-key="cia"]'))return;const t=el.textContent.replace(/\s+/g,' ').trim();if(/novo registro/i.test(t)&&/(?:1ª|2ª|3ª)\s*cia/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)){let top=el;while(top.parentElement&&top.parentElement!==panel)top=top.parentElement;if(top.parentElement===panel)top.classList.add('roubo-source-hidden')}})}
+function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
+[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
+const f=document.getElementById('dash');f.addEventListener('load',()=>{const run=()=>{try{process(f.contentDocument)}catch(e){}};run();setTimeout(run,700);setTimeout(run,1600);setTimeout(run,3000);try{const d=f.contentDocument;if(d&&d.body){new MutationObserver(()=>{clearTimeout(window.__allBars);window.__allBars=setTimeout(run,250)}).observe(d.body,{childList:true,subtree:true})}}catch(e){}});
 </script>
 </body>
 </html>
