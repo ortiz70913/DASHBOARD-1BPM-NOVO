@@ -53,32 +53,46 @@ function makeCiaChart(doc){
  if(data.some(x=>x.count<=0))return;
  const max=Math.max(...data.map(x=>x.count),1),chart=doc.createElement('div');chart.className='roubo-bar-chart roubo-cia-chart';chart.dataset.rouboChart='cia';chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
  heading.parentNode.insertBefore(chart,heading.nextSibling);
- hideCiaOriginalRows(panel,doc);
+ hideCiaOriginalRows(panel,doc,chart);
 }
-function hideCiaOriginalRows(panel,doc){
- const chart=panel.querySelector('.roubo-cia-chart');
- const patterns=[['2ª cia','43,2%'],['1ª cia','29,5%'],['3ª cia','27,3%']];
- patterns.forEach(([cia,pct])=>{
-   const matches=[...panel.querySelectorAll('*')].filter(e=>{
-     if(chart&&e.closest('.roubo-cia-chart'))return false;
-     if(e.children.length>6)return false;
+function hideCiaOriginalRows(panel,doc,chart){
+ const wanted=[['2ª cia','43,2%'],['1ª cia','29,5%'],['3ª cia','27,3%']];
+ // Esconde o contêiner completo de cada linha original, subindo na árvore até
+ // encontrar o menor elemento que também contenha "Novo registro".
+ wanted.forEach(([cia,pct])=>{
+   const leaves=[...panel.querySelectorAll('*')].filter(e=>{
+     if(e.closest('.roubo-bar-chart'))return false;
+     if(e.children.length!==0)return false;
      const t=norm(e.textContent);
-     return t.includes(cia)&&t.includes(pct)&&t.length<100;
-   }).sort((a,b)=>b.textContent.length-a.textContent.length);
-   if(matches.length){
-     const target=matches[0];
-     const row=target.closest('.ciarow')||target.closest('.hb')||target.closest('.bar')||target.parentElement;
-     if(row&&row!==chart)row.classList.add('roubo-source-hidden');
-     target.classList.add('roubo-source-hidden');
-   }
+     return t.includes('novo registro')&&(t.includes(cia)||t.includes(pct));
+   });
+   leaves.forEach(leaf=>{
+     let node=leaf;
+     let best=null;
+     for(let i=0;i<8&&node&&node!==panel;i++,node=node.parentElement){
+       const t=norm(node.textContent);
+       if(t.length>20&&t.length<180&&t.includes(cia)&&t.includes(pct)&&t.includes('novo registro')) best=node;
+     }
+     if(best)best.classList.add('roubo-source-hidden');
+   });
  });
- // fallback: hide any remaining original text row that contains a CIA and its original percentage
+ // Fallback: localiza qualquer bloco curto que contenha companhia + percentual
+ // + Novo registro e o oculta. Nunca toca no gráfico novo.
  [...panel.querySelectorAll('*')].forEach(e=>{
-   if(chart&&e.closest('.roubo-cia-chart'))return;
-   if(e.children.length>6)return;
+   if(e.closest('.roubo-bar-chart'))return;
+   if(e.children.length>8)return;
    const t=norm(e.textContent);
-   if(/(?:1ª|2ª|3ª)\s*cia/.test(t)&&/(?:43,2|29,5|27,3)%/.test(t)&&t.length<100)e.classList.add('roubo-source-hidden');
+   if(t.length<180&&t.includes('novo registro')&&/(?:1ª|2ª|3ª)\s*cia/.test(t)&&/(?:43,2|29,5|27,3)%/.test(t))e.classList.add('roubo-source-hidden');
  });
+ // Se as linhas originais estiverem em irmãos diretos do gráfico, oculta esses
+ // irmãos até o rodapé explicativo, preservando o rodapé.
+ let next=chart.nextElementSibling;
+ while(next){
+   const t=norm(next.textContent);
+   if(t.includes('total de ocorrências de cada companhia'))break;
+   if(/(?:1ª|2ª|3ª)\s*cia/.test(t)||t.includes('novo registro'))next.classList.add('roubo-source-hidden');
+   next=next.nextElementSibling;
+ }
 }
 function process(doc){if(!doc||!doc.body)return;if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});makeCiaChart(doc)}
 const frame=document.getElementById('dash');frame.addEventListener('load',()=>{const run=()=>{try{process(frame.contentDocument)}catch(e){}};run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);try{const d=frame.contentDocument;if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true})}}catch(e){}});
