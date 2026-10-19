@@ -45,7 +45,7 @@ function makeCiaChart(doc){
  if(!panel)return;
  const wanted=[['2ª cia',43.2],['1ª cia',29.5],['3ª cia',27.3]], rows=[];
  for(const [name,pctWanted] of wanted){
-   const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.children.length>5)return false;const t=norm(e.textContent);if(!t.includes(name))return false;const m=t.match(/(\d+(?:[.,]\d+)?)\s*%/);return m&&Math.abs(parseFloat(m[1].replace(',','.'))-pctWanted)<0.05}).sort((a,b)=>a.textContent.length-b.textContent.length);
+   const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.closest('.roubo-bar-chart'))return false;if(e.children.length>6)return false;const t=norm(e.textContent);if(!t.includes(name))return false;const m=t.match(/(\d+(?:[.,]\d+)?)\s*%/);return m&&Math.abs(parseFloat(m[1].replace(',','.'))-pctWanted)<0.05}).sort((a,b)=>a.textContent.length-b.textContent.length);
    if(candidates.length)rows.push(candidates[0]);
  }
  if(rows.length!==3)return;
@@ -53,7 +53,32 @@ function makeCiaChart(doc){
  if(data.some(x=>x.count<=0))return;
  const max=Math.max(...data.map(x=>x.count),1),chart=doc.createElement('div');chart.className='roubo-bar-chart roubo-cia-chart';chart.dataset.rouboChart='cia';chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
  heading.parentNode.insertBefore(chart,heading.nextSibling);
- rows.forEach(r=>{const original=r.closest('.ciarow')||r.closest('.hb')||r.closest('.bar')||r;r.classList.add('roubo-source-hidden');if(original!==r)original.classList.add('roubo-source-hidden')});
+ hideCiaOriginalRows(panel,doc);
+}
+function hideCiaOriginalRows(panel,doc){
+ const chart=panel.querySelector('.roubo-cia-chart');
+ const patterns=[['2ª cia','43,2%'],['1ª cia','29,5%'],['3ª cia','27,3%']];
+ patterns.forEach(([cia,pct])=>{
+   const matches=[...panel.querySelectorAll('*')].filter(e=>{
+     if(chart&&e.closest('.roubo-cia-chart'))return false;
+     if(e.children.length>6)return false;
+     const t=norm(e.textContent);
+     return t.includes(cia)&&t.includes(pct)&&t.length<100;
+   }).sort((a,b)=>b.textContent.length-a.textContent.length);
+   if(matches.length){
+     const target=matches[0];
+     const row=target.closest('.ciarow')||target.closest('.hb')||target.closest('.bar')||target.parentElement;
+     if(row&&row!==chart)row.classList.add('roubo-source-hidden');
+     target.classList.add('roubo-source-hidden');
+   }
+ });
+ // fallback: hide any remaining original text row that contains a CIA and its original percentage
+ [...panel.querySelectorAll('*')].forEach(e=>{
+   if(chart&&e.closest('.roubo-cia-chart'))return;
+   if(e.children.length>6)return;
+   const t=norm(e.textContent);
+   if(/(?:1ª|2ª|3ª)\s*cia/.test(t)&&/(?:43,2|29,5|27,3)%/.test(t)&&t.length<100)e.classList.add('roubo-source-hidden');
+ });
 }
 function process(doc){if(!doc||!doc.body)return;if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});makeCiaChart(doc)}
 const frame=document.getElementById('dash');frame.addEventListener('load',()=>{const run=()=>{try{process(frame.contentDocument)}catch(e){}};run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);try{const d=frame.contentDocument;if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true})}}catch(e){}});
