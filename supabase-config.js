@@ -8,6 +8,29 @@ window.p6 = null;
   document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\\/script>');
 })();
 
+/* Inicializa o cliente global usado pelo fluxo de login. */
+(function(){
+  function initSupabaseClient(){
+    try{
+      if(window.sb) return true;
+      if(!window.supabase || typeof window.supabase.createClient!=='function') return false;
+      if(!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return false;
+      window.sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+      return !!window.sb;
+    }catch(e){
+      console.error('Erro ao inicializar cliente Supabase:',e);
+      return false;
+    }
+  }
+  if(!initSupabaseClient()){
+    var tries=0;
+    var timer=setInterval(function(){
+      tries++;
+      if(initSupabaseClient() || tries>=30) clearInterval(timer);
+    },100);
+  }
+})();
+
 /* AJUSTE DIRETO DOS GRAFICOS - nome e barra proporcionais ao espaco real */
 (function(){
   const style=document.createElement('style');
