@@ -25,8 +25,51 @@ function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?pa
 function count(t){const pm=String(t||'').match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?String(t).slice(0,pm.index):String(t);const nums=before.match(/\d+/g)||[];return nums.length?parseInt(nums[nums.length-1],10)||0:0}
 function heading(d,title){return [...d.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)===norm(title))||null}
 function robberyChart(d,title,anchor,key){const h=heading(d,title);if(!h)return;let source=null,node=h.parentElement;for(let i=0;i<12&&node;i++,node=node.parentElement){const hit=[...node.querySelectorAll('.bars')].find(s=>norm(s.textContent).includes(norm(anchor))&&s.querySelectorAll('.bar').length>=2);if(hit){source=hit;break}}if(!source)return;if(d.querySelector('[data-chart-key="'+key+'"]'))return;const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');return{name:String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim(),count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>0);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');h.parentNode.insertBefore(c,h.nextSibling);source.classList.add('roubo-source-hidden')}
-function orcrim(d,id,key){const s=d.querySelector(id);if(!s||s.querySelector('[data-chart-key="'+key+'"]'))return;const src=s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:count(r.textContent),pct:pct(r.textContent)})).filter(x=>x.name);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.style.display='none'}
-function cia(d){if(d.querySelector('[data-chart-key="cia"]'))return;const h=heading(d,'Incidência por companhia');if(!h)return;let panel=h.parentElement;for(let i=0;i<12&&panel;i++,panel=panel.parentElement){const t=norm(panel.textContent);if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia'))break}if(!panel)return;const names=['2ª cia','1ª cia','3ª cia'],data=[];for(const name of names){const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.closest('.big-chart,.roubo-bar-chart'))return false;const t=norm(e.textContent);return t.includes(name)&&/novo registro/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)&&t.length<260}).sort((a,b)=>a.textContent.length-b.textContent.length);if(!candidates.length)continue;const t=candidates[0].textContent.replace(/\s+/g,' ').trim(),p=t.match(/(\d+(?:[.,]\d+)?)\s*%/);if(!p)continue;const n=(t.slice(0,p.index).match(/\d+/g)||[]);const c=n.length?parseInt(n[n.length-1],10):0;if(c>0)data.push({name:name.toUpperCase(),count:c,pct:parseFloat(p[1].replace(',','.'))})}if(data.length!==3)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey='cia';c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');h.parentNode.insertBefore(c,h.nextSibling);[...panel.querySelectorAll('*')].forEach(el=>{if(el===c||el.closest('[data-chart-key="cia"]'))return;const t=el.textContent.replace(/\s+/g,' ').trim();if(/novo registro/i.test(t)&&/(?:1ª|2ª|3ª)\s*cia/i.test(t)&&/\d+(?:[.,]\d+)?\s*%/.test(t)){let top=el;while(top.parentElement&&top.parentElement!==panel)top=top.parentElement;if(top.parentElement===panel)top.classList.add('roubo-source-hidden')}})}
+function orcrim(d,id,key){const s=d.querySelector(id);if(!s||s.querySelector('[data-chart-key="'+key+'"]))return;const src=s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:count(r.textContent),pct:pct(r.textContent)})).filter(x=>x.name);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.style.display='none'}
+
+function cia(d){
+  const h=heading(d,'Incidência por companhia');
+  if(!h)return;
+  const existing=d.querySelector('[data-chart-key="cia"]');
+  let panel=h.parentElement;
+  for(let i=0;i<12&&panel;i++,panel=panel.parentElement){
+    const t=norm(panel.textContent);
+    if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia'))break;
+  }
+  if(!panel)return;
+
+  // Usa diretamente as linhas originais da Incidência por companhia.
+  // Isso evita capturar o painel inteiro e duplicar os dados.
+  let rows=[...panel.querySelectorAll('.ciarow')];
+  rows=rows.filter(r=>/(?:1ª|2ª|3ª)\s*cia/i.test(r.textContent));
+
+  const names=['2ª CIA','1ª CIA','3ª CIA'];
+  const data=[];
+  for(const wanted of names){
+    const row=rows.find(r=>norm(r.textContent).includes(norm(wanted)));
+    if(!row)continue;
+    const text=row.textContent.replace(/\s+/g,' ').trim();
+    const p=pct(text); const c=count(text);
+    if(c>0&&p>=0)data.push({name:wanted,count:c,pct:p});
+  }
+
+  if(data.length!==3)return;
+
+  let chart=existing;
+  if(!chart){
+    const max=Math.max(1,...data.map(x=>x.count));
+    chart=d.createElement('div');
+    chart.className='roubo-bar-chart';
+    chart.dataset.chartKey='cia';
+    chart.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');
+    h.parentNode.insertBefore(chart,h.nextSibling);
+  }
+
+  // Somente as três linhas originais são ocultadas.
+  // O gráfico permanece visível.
+  rows.forEach(r=>r.classList.add('roubo-source-hidden'));
+}
+
 function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
 [['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
 const f=document.getElementById('dash');f.addEventListener('load',()=>{const run=()=>{try{process(f.contentDocument)}catch(e){}};run();setTimeout(run,700);setTimeout(run,1600);setTimeout(run,3000);try{const d=f.contentDocument;if(d&&d.body){new MutationObserver(()=>{clearTimeout(window.__allBars);window.__allBars=setTimeout(run,250)}).observe(d.body,{childList:true,subtree:true})}}catch(e){}});
