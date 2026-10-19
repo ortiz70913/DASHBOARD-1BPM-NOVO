@@ -2,10 +2,10 @@ window.SUPABASE_URL = 'https://rbpuatcdlbfqxfkbvgst.supabase.co';
 window.SUPABASE_ANON_KEY = 'sb_publishable_AH0rCyKZ4J5SMfMwof3TkA_wkTXeg9D';
 window.p6 = null;
 
-/* Fallback da biblioteca Supabase: o login não deve depender apenas do jsDelivr. */
+/* Carrega o Supabase de forma síncrona antes do código principal do Dashboard. */
 (function(){
   if(window.supabase && typeof window.supabase.createClient==='function') return;
-  document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\\/script>');
+  document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
 })();
 
 /* Inicializa o cliente global usado pelo fluxo de login. */
@@ -58,7 +58,6 @@ window.p6 = null;
     .rankitem .bar{grid-column:3!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important}
     .rankitem .val{grid-column:4!important;width:34px!important;min-width:34px!important;margin:0!important;padding:0!important;text-align:right!important}
 
-    /* NOVO: apresentação compacta para Companhia, Motivação e Bairros. */
     #p-cia .ciarow{width:100%!important;margin:2px 0 6px!important}
     #p-cia .ciarow .hb{display:grid!important;grid-template-columns:105px minmax(0,1fr) 86px!important;gap:7px!important;align-items:center!important;width:100%!important;margin:5px 0!important;padding:0!important}
     #p-cia .ciarow .hbname{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-weight:700!important}
@@ -74,7 +73,6 @@ window.p6 = null;
     #p-motiv .bars .bar>div>em,#p-bairro .bars .bar>div>em{position:absolute!important;right:7px!important;top:50%!important;transform:translateY(-50%)!important;font-style:normal!important;font-size:.68rem!important;font-weight:800!important;color:var(--ink)!important;white-space:nowrap!important;z-index:2!important}
     #p-motiv .bars .bar .bardelta,#p-bairro .bars .bar .bardelta{grid-column:2!important;grid-row:2!important;width:100%!important;height:11px!important;line-height:11px!important;margin:0!important;padding:0!important;font-size:.57rem!important}
 
-    /* Bairros: usa as duas metades do card, reduzindo o vazio vertical e lateral. */
     #p-bairro .bars{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;column-gap:24px!important;row-gap:5px!important;align-items:start!important}
     #p-bairro .bars .bar{width:100%!important}
 
