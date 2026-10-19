@@ -5,7 +5,7 @@ window.p6 = null;
 /* AJUSTE DIRETO DOS GRAFICOS - nome e barra proporcionais ao espaco real */
 (function(){
   const style=document.createElement('style');
-  style.id='dashboard-chart-layout-final-v6';
+  style.id='dashboard-chart-layout-final-v7';
   style.textContent=`
     .bars{display:flex!important;flex-direction:column!important;width:100%!important;max-width:100%!important;gap:5px!important;padding:0!important;margin:0!important;box-sizing:border-box!important}
     .bars .bar{display:grid!important;grid-template-columns:fit-content(220px) minmax(0,1fr)!important;grid-template-rows:26px 12px!important;column-gap:5px!important;row-gap:1px!important;width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;padding:1px 0!important;margin:0!important;align-items:center!important;box-sizing:border-box!important}
@@ -32,17 +32,16 @@ window.p6 = null;
     #p-orcrim-autores .bars .bar>b,
     #p-bairro .bars .bar>b{width:auto!important;max-width:220px!important}
 
-    /* FASE 3A: elimina o espaco entre nome e barra sem alterar o layout dos cards. */
-    .critical-item{display:grid!important;grid-template-columns:34px max-content minmax(0,1fr) 32px!important;column-gap:6px!important;row-gap:0!important;width:100%!important;min-width:0!important;align-items:center!important}
-    .critical-item .pos{width:34px!important;min-width:34px!important}
+    .critical-item{display:grid!important;grid-template-columns:34px max-content minmax(0,1fr) 32px!important;column-gap:4px!important;row-gap:0!important;width:100%!important;min-width:0!important;align-items:center!important}
+    .critical-item .pos{grid-column:1!important;width:34px!important;min-width:34px!important;margin:0!important;padding:0!important}
     .critical-item .name{grid-column:2!important;width:max-content!important;max-width:260px!important;min-width:0!important;margin:0!important;padding:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-    .critical-item .bar{grid-column:3!important;width:100%!important;min-width:0!important;margin:0!important}
+    .critical-item .bar{grid-column:3!important;width:100%!important;min-width:0!important;margin:0!important;padding:0!important}
     .critical-item .val{grid-column:4!important;width:32px!important;min-width:32px!important;margin:0!important;padding:0!important;text-align:right!important}
 
     @media(max-width:900px){
       .bars .bar{grid-template-columns:fit-content(180px) minmax(0,1fr)!important;column-gap:4px!important}
       .bars .bar>b{width:auto!important;max-width:180px!important}
-      .critical-item{grid-template-columns:30px max-content minmax(0,1fr) 28px!important;column-gap:5px!important}
+      .critical-item{grid-template-columns:30px max-content minmax(0,1fr) 28px!important;column-gap:4px!important}
       .critical-item .pos{width:30px!important;min-width:30px!important}
       .critical-item .name{max-width:210px!important}
       .critical-item .val{width:28px!important;min-width:28px!important}
@@ -52,11 +51,27 @@ window.p6 = null;
       .bars .bar>b{grid-column:1!important;grid-row:1!important;width:100%!important;height:22px!important;max-width:100%!important}
       .bars .bar>div{grid-column:1!important;grid-row:2!important;width:100%!important;height:22px!important;min-height:22px!important}
       .bars .bar .bardelta{grid-column:1!important;grid-row:3!important;width:100%!important;height:11px!important;line-height:11px!important;margin-left:27px!important}
-      .critical-item{grid-template-columns:28px max-content minmax(0,1fr) 26px!important;column-gap:4px!important}
+      .critical-item{grid-template-columns:28px max-content minmax(0,1fr) 26px!important;column-gap:3px!important}
       .critical-item .pos{width:28px!important;min-width:28px!important}
       .critical-item .name{max-width:150px!important}
       .critical-item .val{width:26px!important;min-width:26px!important}
     }
+  `;
+  document.head.appendChild(style);
+})();
+
+/* Correção final: força somente o espaçamento dos gráficos críticos, sem alterar cards, dados ou estrutura. */
+(function(){
+  const style=document.createElement('style');
+  style.id='critical-spacing-final';
+  style.textContent=`
+    body .critical-item{grid-template-columns:34px max-content minmax(0,1fr) 32px!important;column-gap:3px!important;row-gap:0!important}
+    body .critical-item .pos{grid-column:1!important}
+    body .critical-item .name{grid-column:2!important;width:max-content!important;max-width:260px!important}
+    body .critical-item .bar{grid-column:3!important;width:100%!important;min-width:0!important}
+    body .critical-item .val{grid-column:4!important;width:32px!important;min-width:32px!important;text-align:right!important}
+    @media(max-width:900px){body .critical-item{grid-template-columns:30px max-content minmax(0,1fr) 28px!important;column-gap:3px!important}body .critical-item .name{max-width:210px!important}}
+    @media(max-width:600px){body .critical-item{grid-template-columns:28px max-content minmax(0,1fr) 26px!important;column-gap:2px!important}body .critical-item .name{max-width:150px!important}}
   `;
   document.head.appendChild(style);
 })();
