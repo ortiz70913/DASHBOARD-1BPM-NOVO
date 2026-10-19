@@ -16,7 +16,6 @@ const css=`
 .big-chart-track,.roubo-bar-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important}
 .big-chart-fill,.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
 .big-chart-value,.roubo-bar-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
-.roubo-source-hidden{display:none!important}
 @media(max-width:900px){.big-chart-row,.roubo-bar-row{grid-template-columns:170px minmax(140px,1fr) 95px!important;gap:8px!important}}
 @media(max-width:600px){.big-chart-row,.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.big-chart-value,.roubo-bar-value{text-align:left!important}.big-chart-track,.roubo-bar-track{height:21px!important}}
 `;
@@ -26,41 +25,30 @@ function count(t){const pm=String(t||'').match(/\d+(?:[.,]\d+)?\s*%/);const befo
 function heading(d,title){return [...d.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)===norm(title))||null}
 function robberyChart(d,title,anchor,key){const h=heading(d,title);if(!h)return;let source=null,node=h.parentElement;for(let i=0;i<12&&node;i++,node=node.parentElement){const hit=[...node.querySelectorAll('.bars')].find(s=>norm(s.textContent).includes(norm(anchor))&&s.querySelectorAll('.bar').length>=2);if(hit){source=hit;break}}if(!source)return;if(d.querySelector('[data-chart-key="'+key+'"]'))return;const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');return{name:String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim(),count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>0);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');h.parentNode.insertBefore(c,h.nextSibling);source.classList.add('roubo-source-hidden')}
 function orcrim(d,id,key){const s=d.querySelector(id);if(!s||s.querySelector('[data-chart-key="'+key+'"]))return;const src=s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:count(r.textContent),pct:pct(r.textContent)})).filter(x=>x.name);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.style.display='none'}
-
 function cia(d){
-  // Localiza exclusivamente o painel da incidência por companhia.
   const panel=d.querySelector('#p-cia');
-  if(!panel)return;
-  if(panel.querySelector('[data-chart-key="cia"]'))return;
-
+  if(!panel||panel.dataset.ciaOnlyChart==='1')return;
   const rows=[...panel.querySelectorAll('.ciarow')].filter(r=>/(?:1ª|2ª|3ª)\s*cia/i.test(r.textContent));
   if(rows.length<3)return;
-
-  const names=['2ª CIA','1ª CIA','3ª CIA'];
-  const data=[];
-  for(const wanted of names){
+  const data=['2ª CIA','1ª CIA','3ª CIA'].map(wanted=>{
     const row=rows.find(r=>norm(r.textContent).includes(norm(wanted)));
-    if(!row)continue;
+    if(!row)return null;
     const text=row.textContent.replace(/\s+/g,' ').trim();
-    const p=pct(text), c=count(text);
-    if(c>0)data.push({name:wanted,count:c,pct:p});
-  }
+    const b=row.querySelector('.hb > b');
+    const c=b?parseInt((b.textContent.match(/\d+/)||['0'])[0],10):count(text);
+    return {name:wanted,count:c,pct:pct(text)};
+  }).filter(Boolean);
   if(data.length!==3)return;
-
   const max=Math.max(1,...data.map(x=>x.count));
   const chart=d.createElement('div');
   chart.className='roubo-bar-chart';
-  chart.dataset.chartKey='cia';
+  chart.dataset.chartKey='cia-only';
   chart.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');
-
-  // Substitui TODO o conteúdo original do painel pelo gráfico.
-  // Assim não ficam título, linhas, "Novo registro" ou texto explicativo duplicados.
   panel.innerHTML='';
   panel.appendChild(chart);
+  panel.dataset.ciaOnlyChart='1';
 }
-
-function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
-[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
+function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
 const f=document.getElementById('dash');f.addEventListener('load',()=>{const run=()=>{try{process(f.contentDocument)}catch(e){}};run();setTimeout(run,700);setTimeout(run,1600);setTimeout(run,3000);try{const d=f.contentDocument;if(d&&d.body){new MutationObserver(()=>{clearTimeout(window.__allBars);window.__allBars=setTimeout(run,250)}).observe(d.body,{childList:true,subtree:true})}}catch(e){}});
 </script>
 </body>
