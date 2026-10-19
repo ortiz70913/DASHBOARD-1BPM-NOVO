@@ -82,17 +82,29 @@ function makeCiaChart(doc){
  if(!heading)return;
  const panel=heading.closest('#p-cia')||heading.parentElement;
  if(panel.dataset.ciaChartDone==='1')return;
- const rows=[...doc.querySelectorAll('#p-cia .ciarow')];
- if(rows.length<3)return;
- const data=rows.map(r=>{
+ const all=[...doc.querySelectorAll('.ciarow')];
+ if(!all.length)return;
+ const parsed=all.map(r=>{
+  const text=r.textContent.replace(/\s+/g,' ').trim();
   const nameEl=r.querySelector('.hbname');
-  const text=r.textContent;
-  const name=nameEl?nameEl.textContent.trim():String(text).replace(/^\s*\d+\s*[º°.]?\s*/,'').replace(/\d+(?:[.,]\d+)?\s*%[\s\S]*$/,'').trim();
-  return{name,count:getCount(text),pct:getPercent(text)};
- }).filter(x=>x.name&&x.count>0&&x.pct>0);
- if(data.length!==3)return;
+  const name=norm(nameEl?nameEl.textContent:text);
+  return {row:r,name,count:getCount(text),pct:getPercent(text)};
+ }).filter(x=>x.count>0&&x.pct>0);
+ // Seleciona somente o conjunto correto das 3 companhias e dos percentuais do painel.
+ const wanted=[
+  {name:'2ª cia',pct:43.2},
+  {name:'1ª cia',pct:29.5},
+  {name:'3ª cia',pct:27.3}
+ ];
+ const selected=[];
+ wanted.forEach(w=>{
+  const hit=parsed.find(x=>x.name===w.name && Math.abs(x.pct-w.pct)<0.11);
+  if(hit)selected.push(hit);
+ });
+ if(selected.length!==3)return;
+ const data=selected.map(x=>({name:x.name.replace(/\bcia\b/i,'CIA'),count:x.count,pct:x.pct}));
  const chart=buildChart(doc,heading,data,'ciaChartDone');
- if(chart)rows.forEach(r=>r.classList.add('roubo-source-hidden'));
+ if(chart){selected.forEach(x=>x.row.classList.add('roubo-source-hidden'));}
 }
 function process(doc){
  if(!doc||!doc.body)return;
