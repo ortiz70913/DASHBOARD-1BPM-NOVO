@@ -10,67 +10,46 @@
 <iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
 <script>
 /*
-  CORREÇÃO DEFINITIVA:
-  Não cria um segundo gráfico e não tenta copiar os dados para outro elemento.
-  O código transforma diretamente cada .bar que já existe no index.html em uma
-  barra horizontal. Assim os valores continuam vindo da mesma fonte de dados.
+  CORREÇÃO DAS BARRAS:
+  O index.html usa .hb (não .bars .bar). Portanto este arquivo apenas
+  estiliza os elementos .hb que o dashboard já gera, sem duplicar dados.
 */
 const styleText=`
-/* esconder somente Incidência por CIA */
+/* manter a remoção somente da seção Incidência por CIA */
 #p-cia{display:none!important}
 
-/* container dos dados */
-.bars{
-  display:flex!important;
-  flex-direction:column!important;
-  gap:10px!important;
-  width:100%!important;
-  margin:0!important;
-  padding:0!important;
-}
-
-/* cada registro vira uma linha de gráfico */
-.bars .bar{
+/* todas as listas horizontais do dashboard */
+.hb{
   display:grid!important;
-  grid-template-columns:minmax(170px,240px) minmax(220px,1fr) 115px!important;
-  grid-template-rows:30px!important;
-  column-gap:12px!important;
+  grid-template-columns:minmax(170px,260px) minmax(260px,1fr) 120px!important;
+  gap:12px!important;
   align-items:center!important;
   width:100%!important;
-  min-height:30px!important;
-  margin:0!important;
+  min-height:34px!important;
+  margin:8px 0!important;
   padding:0!important;
+  font-size:.86rem!important;
   overflow:visible!important;
   box-sizing:border-box!important;
 }
 
-/* nome */
-.bars .bar>b{
+/* nome do item */
+.hb>span{
   grid-column:1!important;
   grid-row:1!important;
   display:block!important;
   min-width:0!important;
   margin:0!important;
   padding:0!important;
-  text-align:left!important;
-  font-size:.86rem!important;
+  color:var(--ink,#0f1c2e)!important;
   font-weight:800!important;
-  color:var(--ink,#10233d)!important;
   white-space:nowrap!important;
   overflow:hidden!important;
   text-overflow:ellipsis!important;
 }
 
-.bars .bar>b .ranknum{
-  display:inline-block!important;
-  width:28px!important;
-  min-width:28px!important;
-  color:var(--mut,#5b6b7f)!important;
-  font-weight:700!important;
-}
-
-/* trilho da barra */
-.bars .bar>div{
+/* trilho */
+.hb>div{
   grid-column:2!important;
   grid-row:1!important;
   position:relative!important;
@@ -83,15 +62,15 @@ const styleText=`
   background:#e8edf3!important;
   border:1px solid #ccd6e1!important;
   border-radius:7px!important;
-  overflow:visible!important;
+  overflow:hidden!important;
   box-sizing:border-box!important;
 }
 
-/* preenchimento proporcional já calculado pelo dashboard */
-.bars .bar>div>i{
+/* preenchimento proporcional já calculado pelo index.html */
+.hb>div>i{
   display:block!important;
   height:100%!important;
-  min-width:0!important;
+  min-width:2px!important;
   max-width:100%!important;
   margin:0!important;
   padding:0!important;
@@ -101,44 +80,71 @@ const styleText=`
   transition:width .25s ease!important;
 }
 
-/* valor fica sempre fora da barra, sem ser coberto */
-.bars .bar>div>em{
-  position:absolute!important;
-  left:calc(100% + 10px)!important;
-  top:50%!important;
-  transform:translateY(-50%)!important;
-  width:105px!important;
+/* primeiro colocado */
+.hb.top>div>i{background:linear-gradient(90deg,#5d86b0,#0b2545)!important}
+
+/* valor e percentual fora da barra */
+.hb>b{
+  grid-column:3!important;
+  grid-row:1!important;
+  display:block!important;
+  width:120px!important;
   margin:0!important;
   padding:0!important;
-  background:transparent!important;
-  color:var(--ink,#10233d)!important;
-  font-size:.80rem!important;
-  font-weight:900!important;
-  font-style:italic!important;
+  color:var(--ink,#0f1c2e)!important;
   text-align:left!important;
+  font-weight:800!important;
   white-space:nowrap!important;
   overflow:visible!important;
-  z-index:20!important;
 }
 
-/* retirar a mensagem de variação de cada linha para deixar somente os dados com barras */
-.bars .bar .bardelta{display:none!important}
+.hb>b u{
+  text-decoration:none!important;
+  color:var(--mut,#5b6b7f)!important;
+  font-weight:500!important;
+  font-size:.78rem!important;
+}
 
-/* ORCRIM também usa o mesmo .bars */
-#p-orcrim-vitima .bars,
-#p-orcrim-autores .bars{display:flex!important}
+/* CIA continua removida da dashboard */
+#p-cia{display:none!important}
+
+/* ajuste específico dos gráficos da aba Roubo a Estabelecimento */
+#p-estab .hb,
+#p-tipoc .hb,
+#p-logr .hb,
+#p-arma .hb,
+#p-local .hb,
+#p-abord .hb{
+  min-height:36px!important;
+}
+
+#p-estab .hb>div,
+#p-tipoc .hb>div,
+#p-logr .hb>div,
+#p-arma .hb>div,
+#p-local .hb>div,
+#p-abord .hb>div{
+  height:24px!important;
+}
 
 @media(max-width:900px){
-  .bars .bar{grid-template-columns:minmax(130px,190px) minmax(150px,1fr) 105px!important;column-gap:8px!important}
-  .bars .bar>b{font-size:.78rem!important}
-  .bars .bar>div>em{font-size:.72rem!important;left:calc(100% + 7px)!important}
+  .hb{
+    grid-template-columns:minmax(120px,200px) minmax(160px,1fr) 105px!important;
+    gap:9px!important;
+  }
+  .hb>b{width:105px!important;font-size:.78rem!important}
+  .hb>b u{font-size:.70rem!important}
+  .hb>span{font-size:.80rem!important}
 }
 
 @media(max-width:600px){
-  .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto 20px auto!important;row-gap:3px!important;min-height:54px!important}
-  .bars .bar>b{grid-column:1!important;grid-row:1!important}
-  .bars .bar>div{grid-column:1!important;grid-row:2!important;width:calc(100% - 82px)!important}
-  .bars .bar>div>em{left:calc(100% + 7px)!important;width:75px!important;font-size:.68rem!important}
+  .hb{
+    grid-template-columns:minmax(100px,150px) minmax(100px,1fr) 92px!important;
+    gap:7px!important;
+    font-size:.74rem!important;
+  }
+  .hb>b{width:92px!important;font-size:.70rem!important}
+  .hb>b u{font-size:.64rem!important}
 }
 `;
 
@@ -159,23 +165,16 @@ function fixBars(d){
   inject(d);
   removeCIA(d);
 
-  /*
-     O index.html já gera os registros em .bars .bar.
-     Aqui apenas garantimos que cada linha tenha os elementos esperados.
-     Não duplicamos nenhum dado e não criamos uma segunda lista.
-  */
-  d.querySelectorAll('.bars .bar').forEach(row=>{
+  /* O index.html já gera as barras como .hb. Apenas garantimos o layout. */
+  d.querySelectorAll('.hb').forEach(row=>{
     const track=row.querySelector(':scope > div');
     const fill=track&&track.querySelector(':scope > i');
-    const value=track&&track.querySelector(':scope > em');
-    if(!track||!fill||!value)return;
-
+    if(!track||!fill)return;
     track.style.display='block';
     track.style.position='relative';
-    track.style.overflow='visible';
+    track.style.overflow='hidden';
     fill.style.display='block';
     fill.style.maxWidth='100%';
-    value.style.display='block';
   });
 }
 
@@ -203,7 +202,6 @@ frame.addEventListener('load',()=>{
   }catch(e){console.error('OBSERVER:',e)}
 });
 
-/* caso o iframe já esteja carregado */
 setTimeout(run,300);
 </script>
 </body>
