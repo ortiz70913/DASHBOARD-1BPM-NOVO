@@ -1,0 +1,56 @@
+name: Corrigir login Supabase - v2
+
+on:
+  push:
+    paths:
+      - .github/login-fix-v2.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Corrigir carregamento e inicializacao do Supabase
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_tag = '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>'
+          new_tag = '<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>'
+          if old_tag in s:
+              s = s.replace(old_tag, new_tag, 1)
+              print('Biblioteca Supabase alterada para unpkg.')
+          else:
+              print('Tag jsDelivr nao encontrada; mantendo a tag atual.')
+
+          old_guard = "if(!sb)throw new Error('A conexão com o Supabase não foi inicializada. Atualize a página e tente novamente.');"
+          new_guard = """if(!sb){
+    if(!window.supabase || typeof window.supabase.createClient!=='function')
+      throw new Error('Biblioteca do Supabase não foi carregada. Recarregue a página e tente novamente.');
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  }
+  if(!sb)throw new Error('A conexão com o Supabase não foi inicializada.');"""
+          if old_guard in s:
+              s = s.replace(old_guard, new_guard, 1)
+              print('Guard de login corrigido.')
+          else:
+              print('Guard antigo nao encontrado; pode ja estar corrigido.')
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Corrigir inicializacao do Supabase no login"
+          git push
