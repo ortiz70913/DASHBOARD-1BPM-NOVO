@@ -32,36 +32,51 @@ const configs=[
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
 function getPercent(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
 function getCount(t){const text=String(t||'');const pm=text.match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?text.slice(0,pm.index):text;const nums=before.match(/\d+/g)||[];return nums.length>=2?parseInt(nums[nums.length-1],10)||0:0}
-function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||null}
+function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||[...doc.querySelectorAll('body *')].filter(e=>e.children.length===0&&norm(e.textContent)===title).sort((a,b)=>a.textContent.length-b.textContent.length)[0]||null}
 function findSource(heading,cfg){let node=heading.parentElement;for(let level=0;level<12&&node;level++,node=node.parentElement){const sources=[...node.querySelectorAll('.bars')];const candidates=sources.filter(s=>s.querySelectorAll('.bar').length>=2);const hit=candidates.find(s=>cfg.anchor&&norm(s.textContent).includes(cfg.anchor));if(hit)return hit}return null}
-function buildChart(doc,heading,data,key){if(!data.length)return null;const panel=heading.parentElement; if(panel.querySelector('.roubo-bar-chart[data-roubo-chart="'+key+'"]'))return null;const max=Math.max(...data.map(x=>x.count),1);const chart=doc.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart=key;chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');heading.parentNode.insertBefore(chart,heading.nextSibling);return chart}
-function makeChart(doc,heading,source){const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');const name=String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:getCount(r.textContent),pct:getPercent(r.textContent)}}).filter(x=>x.name&&x.count>0&&x.pct>0);const chart=buildChart(doc,heading,data,'rouboDone');if(chart)source.classList.add('roubo-source-hidden')}
-function ciaRowElements(doc){
- const all=[...doc.querySelectorAll('body *')];
- const wanted=[['2ª cia',43.2],['1ª cia',29.5],['3ª cia',27.3]];
- const out=[];
- for(const [name,pctWanted] of wanted){
-   const matches=all.filter(el=>{if(el.children.length>6)return false;const t=norm(el.textContent);if(!t.includes(name))return false;const m=t.match(/(\d+(?:[.,]\d+)?)\s*%/);if(!m)return false;return Math.abs(parseFloat(m[1].replace(',','.'))-pctWanted)<0.05});
-   matches.sort((a,b)=>a.textContent.length-b.textContent.length);
-   if(matches.length)out.push(matches[0]);
- }
- return out;
-}
+function buildChart(doc,heading,data,key){if(!data.length)return null;const panel=heading.parentElement;if(panel.querySelector('.roubo-bar-chart[data-roubo-chart="'+key+'"]'))return null;const max=Math.max(...data.map(x=>x.count),1);const chart=doc.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart=key;chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');heading.parentNode.insertBefore(chart,heading.nextSibling);return chart}
+function makeChart(doc,heading,source,key){const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');const name=String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:getCount(r.textContent),pct:getPercent(r.textContent)}}).filter(x=>x.name&&x.count>0&&x.pct>0);const chart=buildChart(doc,heading,data,key);if(chart)source.classList.add('roubo-source-hidden')}
 function makeCiaChart(doc){
- const heading=[...doc.querySelectorAll('body *')].find(el=>el.children.length===0&&norm(el.textContent)==='incidência por companhia');
- if(!heading)return;
  if(doc.querySelector('.roubo-cia-chart'))return;
- const rows=ciaRowElements(doc);
+ const titleCandidates=[...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd,body *')];
+ const heading=titleCandidates.find(e=>e.children.length===0&&norm(e.textContent)==='incidência por companhia')||titleCandidates.find(e=>norm(e.textContent)==='incidência por companhia');
+ if(!heading)return;
+ let panel=heading.parentElement;
+ for(let i=0;i<12&&panel;i++,panel=panel.parentElement){
+   const txt=norm(panel.textContent);
+   if(txt.includes('2ª cia')&&txt.includes('1ª cia')&&txt.includes('3ª cia')&&txt.includes('43,2%')&&txt.includes('29,5%')&&txt.includes('27,3%'))break;
+ }
+ if(!panel)return;
+ const wanted=[['2ª cia',43.2],['1ª cia',29.5],['3ª cia',27.3]];
+ const rows=[];
+ for(const [name,pctWanted] of wanted){
+   const candidates=[...panel.querySelectorAll('*')].filter(e=>{
+     if(e.children.length>5)return false;
+     const t=norm(e.textContent);
+     if(!t.includes(name))return false;
+     const m=t.match(/(\d+(?:[.,]\d+)?)\s*%/);if(!m)return false;
+     return Math.abs(parseFloat(m[1].replace(',','.'))-pctWanted)<0.05;
+   }).sort((a,b)=>a.textContent.length-b.textContent.length);
+   if(candidates.length)rows.push(candidates[0]);
+ }
  if(rows.length!==3)return;
- const data=rows.map(r=>{const t=r.textContent.replace(/\s+/g,' ').trim();const nm=t.match(/(2ª\s*CIA|1ª\s*CIA|3ª\s*CIA)/i);const pm=t.match(/(\d+(?:[.,]\d+)?)\s*%/);const before=pm?t.slice(0,pm.index):t;const nums=before.match(/\d+/g)||[];const count=nums.length?parseInt(nums[nums.length-1],10):0;return{name:nm?nm[1].replace(/\s+/g,' ').toUpperCase():t,count,pct:pm?parseFloat(pm[1].replace(',','.')):0}}).filter(x=>x.count>0&&x.pct>0);
- if(data.length!==3)return;
+ const data=rows.map(r=>{
+   const t=r.textContent.replace(/\s+/g,' ').trim();
+   const nm=t.match(/(2ª\s*CIA|1ª\s*CIA|3ª\s*CIA)/i);
+   const pm=t.match(/(\d+(?:[.,]\d+)?)\s*%/);
+   const before=pm?t.slice(0,pm.index):t;
+   const nums=before.match(/\d+/g)||[];
+   const count=nums.length?parseInt(nums[nums.length-1],10):0;
+   return {name:nm?nm[1].replace(/\s+/g,' ').toUpperCase():t,count,pct:pm?parseFloat(pm[1].replace(',','.')):0};
+ });
+ if(data.some(x=>x.count<=0))return;
  const max=Math.max(...data.map(x=>x.count),1);
  const chart=doc.createElement('div');chart.className='roubo-bar-chart roubo-cia-chart';chart.dataset.rouboChart='cia';
  chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
- heading.parentElement.insertBefore(chart,heading.nextSibling);
+ heading.parentNode.insertBefore(chart,heading.nextSibling);
  rows.forEach(r=>r.classList.add('roubo-source-hidden'));
 }
-function process(doc){if(!doc||!doc.body)return;if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}configs.forEach(c=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s)});makeCiaChart(doc)}
+function process(doc){if(!doc||!doc.body)return;if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});makeCiaChart(doc)}
 const frame=document.getElementById('dash');frame.addEventListener('load',()=>{const run=()=>{try{process(frame.contentDocument)}catch(e){}};run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);try{const d=frame.contentDocument;if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true})}}catch(e){}});
 </script>
 </body>
