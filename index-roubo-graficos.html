@@ -17,6 +17,7 @@ const css=`
 .big-chart-fill,.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
 .big-chart-value,.roubo-bar-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
 .roubo-source-hidden{display:none!important}
+.roubo-cia-original-hidden{display:none!important}
 @media(max-width:900px){.big-chart-row,.roubo-bar-row{grid-template-columns:170px minmax(140px,1fr) 95px!important;gap:8px!important}}
 @media(max-width:600px){.big-chart-row,.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.big-chart-value,.roubo-bar-value{text-align:left!important}.big-chart-track,.roubo-bar-track{height:21px!important}}
 `;
@@ -38,8 +39,6 @@ function cia(d){
   }
   if(!panel)return;
 
-  // Usa diretamente as linhas originais da Incidência por companhia.
-  // Isso evita capturar o painel inteiro e duplicar os dados.
   let rows=[...panel.querySelectorAll('.ciarow')];
   rows=rows.filter(r=>/(?:1ª|2ª|3ª)\s*cia/i.test(r.textContent));
 
@@ -65,9 +64,16 @@ function cia(d){
     h.parentNode.insertBefore(chart,h.nextSibling);
   }
 
-  // Somente as três linhas originais são ocultadas.
-  // O gráfico permanece visível.
+  // Remove completamente a apresentação original da incidência por CIA,
+  // mantendo somente o gráfico horizontal.
+  h.classList.add('roubo-cia-original-hidden');
   rows.forEach(r=>r.classList.add('roubo-source-hidden'));
+  const originalText=[...panel.querySelectorAll('p,small,.hint,.note,.description')].filter(el=>!el.closest('[data-chart-key="cia"]'));
+  originalText.forEach(el=>{
+    if(norm(el.textContent).includes('total de ocorrências de cada companhia')||norm(el.textContent).includes('participação no total')){
+      el.classList.add('roubo-cia-original-hidden');
+    }
+  });
 }
 
 function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
