@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard 1º BPM — Gráficos</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
+<script>
+const css=`
+.big-chart{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;margin:12px 0!important}
+.big-chart-row{display:grid!important;grid-template-columns:190px minmax(0,1fr) 105px!important;gap:10px!important;align-items:center!important;width:100%!important;min-height:34px!important}
+.big-chart-name{font-size:.84rem!important;font-weight:800!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.big-chart-track{height:24px!important;background:#e9eef4!important;border:1px solid #d4dce6!important;border-radius:7px!important;overflow:hidden!important}
+.big-chart-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,var(--acc,#3867a8),var(--hi,#63a3d8))!important}
+.big-chart-value{font-size:.78rem!important;font-weight:900!important;text-align:right!important;white-space:nowrap!important}
+@media(max-width:650px){.big-chart-row{grid-template-columns:115px minmax(0,1fr) 82px!important;gap:7px!important}.big-chart-track{height:21px!important}}
+@media(max-width:450px){.big-chart-row{grid-template-columns:1fr!important;gap:3px!important}.big-chart-value{text-align:left!important}}
+`;
+function num(t){const m=String(t||'').replace(/\./g,'').match(/\d+(?:,\d+)?/);return m?parseFloat(m[0].replace(',','.')):0}
+function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
+function ranking(d,id){const s=d.querySelector(id),src=s&&s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;let c=s.querySelector('.big-chart');if(!c){c=d.createElement('div');c.className='big-chart';src.parentNode.insertBefore(c,src)}const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:num(r.textContent),percent:pct(r.textContent)})).filter(x=>x.name),max=Math.max(1,...data.map(x=>x.count));c.innerHTML=data.map(x=>`<div class="big-chart-row"><div class="big-chart-name">${x.name}</div><div class="big-chart-track"><div class="big-chart-fill" style="width:${x.count?Math.max(3,x.count/max*100):0}%"></div></div><div class="big-chart-value">${x.count} · ${x.percent.toFixed(1).replace('.',',')}%</div></div>`).join('');src.style.display='none'}
+function cia(d){const s=d.querySelector('#p-cia');if(!s)return;const rows=[...s.querySelectorAll('.ciarow')];if(!rows.length)return;let c=s.querySelector('.big-chart');if(!c){c=d.createElement('div');c.className='big-chart';rows[0].parentNode.insertBefore(c,rows[0])}const data=rows.map(r=>({name:r.querySelector('.hbname')?.textContent.trim()||'',count:num(r.querySelector('.hb > b')?.textContent||'')})).filter(x=>x.name),max=Math.max(1,...data.map(x=>x.count));c.innerHTML=data.map(x=>`<div class="big-chart-row"><div class="big-chart-name">${x.name}</div><div class="big-chart-track"><div class="big-chart-fill" style="width:${x.count?Math.max(3,x.count/max*100):0}%"></div></div><div class="big-chart-value">${x.count} ocorrência${x.count===1?'':'s'}</div></div>`).join('');rows.forEach(r=>r.style.display='none')}
+function fix(){const f=document.getElementById('dash');try{const d=f.contentDocument;if(!d||!d.head||!d.body)return;if(!d.getElementById('big-chart-css')){const st=d.createElement('style');st.id='big-chart-css';st.textContent=css;d.head.appendChild(st)}ranking(d,'#p-orcrim-vitima');ranking(d,'#p-orcrim-autores');cia(d)}catch(e){}}
+document.getElementById('dash').addEventListener('load',()=>{fix();setTimeout(fix,500);setTimeout(fix,1500);setTimeout(fix,3000)});
+setInterval(fix,2000);
+</script>
+</body>
+</html>
