@@ -4,40 +4,207 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard 1º BPM — Gráficos</title>
-<style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}
-iframe{width:100%;height:100%;border:0;display:block}
-</style>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
 </head>
 <body>
 <iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
 <script>
-const css=`
-.roubo-bar-chart,.big-chart{display:flex!important;flex-direction:column!important;gap:12px!important;width:100%!important;margin:16px 0!important;padding:0!important}
-.roubo-bar-row,.big-chart-row{display:grid!important;grid-template-columns:220px minmax(220px,1fr) 115px!important;gap:12px!important;align-items:center!important;width:100%!important;min-height:38px!important}
-.roubo-bar-name,.big-chart-name{font-size:.88rem!important;font-weight:800!important;color:#10233d!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
-.roubo-bar-track,.big-chart-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important}
-.roubo-bar-fill,.big-chart-fill{height:100%!important;min-width:2px!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
-.roubo-bar-value,.big-chart-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
-.roubo-source-hidden{display:none!important}
-@media(max-width:900px){.roubo-bar-row,.big-chart-row{grid-template-columns:170px minmax(140px,1fr) 100px!important;gap:8px!important}}
-@media(max-width:600px){.roubo-bar-row,.big-chart-row{grid-template-columns:1fr!important;gap:4px!important}.roubo-bar-value,.big-chart-value{text-align:left!important}.roubo-bar-track,.big-chart-track{height:21px!important}}
-`;
-function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
-function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
-function count(t){const s=String(t||'').replace(/\s+/g,' ').trim();const pm=s.match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?s.slice(0,pm.index):s;const nums=before.match(/\d+/g)||[];return nums.length?parseInt(nums[nums.length-1],10)||0:0}
-function titleNode(d,title){const wanted=norm(title);return [...d.querySelectorAll('h1,h2,h3,h4,h5,.title,.hd,[class*="title"],[class*="heading"]')].find(e=>{const t=norm(e.textContent);return t===wanted||t.includes(wanted)})||null}
-function makeChart(d,key,data,target){if(!data.length||d.querySelector('[data-chart-key="'+key+'"]'))return false;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='roubo-bar-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');target.parentNode.insertBefore(c,target.nextSibling);return true}
-function robberyChart(d,title,anchor,key){if(d.querySelector('[data-chart-key="'+key+'"]))return true;const h=titleNode(d,title);if(!h)return false;let panel=h.parentElement,source=null;for(let i=0;i<14&&panel;i++,panel=panel.parentElement){const candidates=[...panel.querySelectorAll('.bars')];source=candidates.find(s=>norm(s.textContent).includes(norm(anchor))&&s.querySelectorAll('.bar').length>=2);if(source)break}if(!source)return false;const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b,strong');let name=b?b.textContent.trim():r.textContent.replace(/\d+(?:[.,]\d+)?\s*%.*$/,'').trim();name=name.replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>0);if(!makeChart(d,key,data,h))return false;source.classList.add('roubo-source-hidden');return true}
-function orcrim(d,id,key){if(d.querySelector('[data-chart-key="'+key+'"]))return true;const s=d.querySelector(id);if(!s)return false;const src=s.querySelector('.bars');if(!src)return false;const rows=[...src.querySelectorAll('.bar')];if(!rows.length)return false;const data=rows.map(r=>{const b=r.querySelector('b,strong');return{name:b?b.textContent.trim():r.textContent,count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>0);if(!data.length)return false;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.classList.add('roubo-source-hidden');return true}
-function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
-[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));
-orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');
-// Incidência por CIA permanece removida conforme solicitado.
+/*
+  CORREÇÃO DEFINITIVA:
+  Não cria um segundo gráfico e não tenta copiar os dados para outro elemento.
+  O código transforma diretamente cada .bar que já existe no index.html em uma
+  barra horizontal. Assim os valores continuam vindo da mesma fonte de dados.
+*/
+const styleText=`
+/* esconder somente Incidência por CIA */
+#p-cia{display:none!important}
+
+/* container dos dados */
+.bars{
+  display:flex!important;
+  flex-direction:column!important;
+  gap:10px!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
 }
-const f=document.getElementById('dash');
-function run(){try{if(f.contentDocument)process(f.contentDocument)}catch(e){}}
-f.addEventListener('load',()=>{run();setTimeout(run,500);setTimeout(run,1200);setTimeout(run,2500);setTimeout(run,5000);try{const d=f.contentDocument;if(d&&d.body){new MutationObserver(()=>{clearTimeout(window.__allBars);window.__allBars=setTimeout(run,180)}).observe(d.body,{childList:true,subtree:true,characterData:true)}}}catch(e){}});
+
+/* cada registro vira uma linha de gráfico */
+.bars .bar{
+  display:grid!important;
+  grid-template-columns:minmax(170px,240px) minmax(220px,1fr) 115px!important;
+  grid-template-rows:30px!important;
+  column-gap:12px!important;
+  align-items:center!important;
+  width:100%!important;
+  min-height:30px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+
+/* nome */
+.bars .bar>b{
+  grid-column:1!important;
+  grid-row:1!important;
+  display:block!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
+  font-size:.86rem!important;
+  font-weight:800!important;
+  color:var(--ink,#10233d)!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+
+.bars .bar>b .ranknum{
+  display:inline-block!important;
+  width:28px!important;
+  min-width:28px!important;
+  color:var(--mut,#5b6b7f)!important;
+  font-weight:700!important;
+}
+
+/* trilho da barra */
+.bars .bar>div{
+  grid-column:2!important;
+  grid-row:1!important;
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:22px!important;
+  min-height:22px!important;
+  margin:0!important;
+  padding:0!important;
+  background:#e8edf3!important;
+  border:1px solid #ccd6e1!important;
+  border-radius:7px!important;
+  overflow:visible!important;
+  box-sizing:border-box!important;
+}
+
+/* preenchimento proporcional já calculado pelo dashboard */
+.bars .bar>div>i{
+  display:block!important;
+  height:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  background:linear-gradient(90deg,#8aa9cc,#123457)!important;
+  border-radius:6px!important;
+  box-sizing:border-box!important;
+  transition:width .25s ease!important;
+}
+
+/* valor fica sempre fora da barra, sem ser coberto */
+.bars .bar>div>em{
+  position:absolute!important;
+  left:calc(100% + 10px)!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  width:105px!important;
+  margin:0!important;
+  padding:0!important;
+  background:transparent!important;
+  color:var(--ink,#10233d)!important;
+  font-size:.80rem!important;
+  font-weight:900!important;
+  font-style:italic!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  z-index:20!important;
+}
+
+/* retirar a mensagem de variação de cada linha para deixar somente os dados com barras */
+.bars .bar .bardelta{display:none!important}
+
+/* ORCRIM também usa o mesmo .bars */
+#p-orcrim-vitima .bars,
+#p-orcrim-autores .bars{display:flex!important}
+
+@media(max-width:900px){
+  .bars .bar{grid-template-columns:minmax(130px,190px) minmax(150px,1fr) 105px!important;column-gap:8px!important}
+  .bars .bar>b{font-size:.78rem!important}
+  .bars .bar>div>em{font-size:.72rem!important;left:calc(100% + 7px)!important}
+}
+
+@media(max-width:600px){
+  .bars .bar{grid-template-columns:1fr!important;grid-template-rows:auto 20px auto!important;row-gap:3px!important;min-height:54px!important}
+  .bars .bar>b{grid-column:1!important;grid-row:1!important}
+  .bars .bar>div{grid-column:1!important;grid-row:2!important;width:calc(100% - 82px)!important}
+  .bars .bar>div>em{left:calc(100% + 7px)!important;width:75px!important;font-size:.68rem!important}
+}
+`;
+
+function inject(d){
+  if(!d||!d.head)return;
+  let st=d.getElementById('graficos-fix-final');
+  if(!st){st=d.createElement('style');st.id='graficos-fix-final';d.head.appendChild(st)}
+  st.textContent=styleText;
+}
+
+function removeCIA(d){
+  const p=d&&d.querySelector('#p-cia');
+  if(p)p.remove();
+}
+
+function fixBars(d){
+  if(!d||!d.body)return;
+  inject(d);
+  removeCIA(d);
+
+  /*
+     O index.html já gera os registros em .bars .bar.
+     Aqui apenas garantimos que cada linha tenha os elementos esperados.
+     Não duplicamos nenhum dado e não criamos uma segunda lista.
+  */
+  d.querySelectorAll('.bars .bar').forEach(row=>{
+    const track=row.querySelector(':scope > div');
+    const fill=track&&track.querySelector(':scope > i');
+    const value=track&&track.querySelector(':scope > em');
+    if(!track||!fill||!value)return;
+
+    track.style.display='block';
+    track.style.position='relative';
+    track.style.overflow='visible';
+    fill.style.display='block';
+    fill.style.maxWidth='100%';
+    value.style.display='block';
+  });
+}
+
+const frame=document.getElementById('dash');
+let timer=null;
+function run(){
+  try{
+    const d=frame.contentDocument;
+    if(!d)return;
+    fixBars(d);
+  }catch(e){console.error('GRÁFICOS:',e)}
+}
+
+frame.addEventListener('load',()=>{
+  run();
+  [250,700,1400,2500,5000,8000].forEach(ms=>setTimeout(run,ms));
+  try{
+    const d=frame.contentDocument;
+    if(d&&d.body){
+      new MutationObserver(()=>{
+        clearTimeout(timer);
+        timer=setTimeout(run,120);
+      }).observe(d.body,{childList:true,subtree:true,characterData:true});
+    }
+  }catch(e){console.error('OBSERVER:',e)}
+});
+
+/* caso o iframe já esteja carregado */
+setTimeout(run,300);
 </script>
 </body>
 </html>
