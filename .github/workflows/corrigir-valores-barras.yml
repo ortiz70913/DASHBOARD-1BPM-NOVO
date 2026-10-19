@@ -1,0 +1,75 @@
+name: Corrigir sobreposicao dos valores nas barras
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar correcao visual
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('supabase-config.js')
+          s = p.read_text(encoding='utf-8')
+          marker = 'dashboard-chart-value-outside-v1'
+          if marker not in s:
+              s += r'''
+
+/* dashboard-chart-value-outside-v1 */
+(function(){
+  const style=document.createElement('style');
+  style.id='dashboard-chart-value-outside-v1';
+  style.textContent=`
+    #p-motiv .bars .bar>div,
+    #p-bairro .bars .bar>div{
+      width:calc(100% - 64px)!important;
+      margin-right:64px!important;
+      overflow:visible!important;
+    }
+    #p-motiv .bars .bar>div>em,
+    #p-bairro .bars .bar>div>em{
+      right:-61px!important;
+      top:50%!important;
+      color:var(--ink)!important;
+      background:transparent!important;
+      z-index:3!important;
+    }
+    @media(max-width:600px){
+      #p-motiv .bars .bar>div,
+      #p-bairro .bars .bar>div{
+        width:calc(100% - 58px)!important;
+        margin-right:58px!important;
+      }
+      #p-motiv .bars .bar>div>em,
+      #p-bairro .bars .bar>div>em{right:-55px!important}
+    }
+  `;
+  document.head.appendChild(style);
+})();
+'''
+              p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commitar correcao
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase-config.js
+          if git diff --cached --quiet; then
+            echo "Nenhuma alteracao necessaria."
+            exit 0
+          fi
+          git commit -m "Corrigir valores sobrepostos nas barras [skip ci]"
+          git push
