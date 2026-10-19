@@ -16,6 +16,8 @@ const css=`
 .big-chart-track,.roubo-bar-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important}
 .big-chart-fill,.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc,#123457)!important}
 .big-chart-value,.roubo-bar-value{font-size:.84rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
+.roubo-source-hidden{display:none!important}
+.cia-only-chart > :not(.roubo-bar-chart){display:none!important}
 @media(max-width:900px){.big-chart-row,.roubo-bar-row{grid-template-columns:170px minmax(140px,1fr) 95px!important;gap:8px!important}}
 @media(max-width:600px){.big-chart-row,.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.big-chart-value,.roubo-bar-value{text-align:left!important}.big-chart-track,.roubo-bar-track{height:21px!important}}
 `;
@@ -27,7 +29,7 @@ function robberyChart(d,title,anchor,key){const h=heading(d,title);if(!h)return;
 function orcrim(d,id,key){const s=d.querySelector(id);if(!s||s.querySelector('[data-chart-key="'+key+'"]))return;const src=s.querySelector('.bars');if(!src)return;const rows=[...src.querySelectorAll(':scope > .bar')];if(!rows.length)return;const data=rows.map(r=>({name:r.querySelector(':scope > b')?.textContent.trim()||'',count:count(r.textContent),pct:pct(r.textContent)})).filter(x=>x.name);if(!data.length)return;const max=Math.max(1,...data.map(x=>x.count));const c=d.createElement('div');c.className='big-chart';c.dataset.chartKey=key;c.innerHTML=data.map(x=>'<div class="big-chart-row"><div class="big-chart-name">'+x.name+'</div><div class="big-chart-track"><div class="big-chart-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="big-chart-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');src.parentNode.insertBefore(c,src);src.style.display='none'}
 function cia(d){
   const panel=d.querySelector('#p-cia');
-  if(!panel||panel.dataset.ciaOnlyChart==='1')return;
+  if(!panel)return;
   const rows=[...panel.querySelectorAll('.ciarow')].filter(r=>/(?:1ª|2ª|3ª)\s*cia/i.test(r.textContent));
   if(rows.length<3)return;
   const data=['2ª CIA','1ª CIA','3ª CIA'].map(wanted=>{
@@ -39,16 +41,19 @@ function cia(d){
     return {name:wanted,count:c,pct:pct(text)};
   }).filter(Boolean);
   if(data.length!==3)return;
-  const max=Math.max(1,...data.map(x=>x.count));
-  const chart=d.createElement('div');
-  chart.className='roubo-bar-chart';
-  chart.dataset.chartKey='cia-only';
-  chart.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');
-  panel.innerHTML='';
-  panel.appendChild(chart);
-  panel.dataset.ciaOnlyChart='1';
+  let chart=panel.querySelector('[data-chart-key="cia-only"]');
+  if(!chart){
+    const max=Math.max(1,...data.map(x=>x.count));
+    chart=d.createElement('div');
+    chart.className='roubo-bar-chart';
+    chart.dataset.chartKey='cia-only';
+    chart.innerHTML=data.map(x=>'<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+Math.max(2,x.count/max*100)+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>').join('');
+    panel.insertBefore(chart,panel.firstChild);
+  }
+  panel.classList.add('cia-only-chart');
 }
-function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
+function process(d){if(!d||!d.body)return;if(!d.getElementById('all-bars-css')){const st=d.createElement('style');st.id='all-bars-css';st.textContent=css;d.head.appendChild(st)}
+[['arma utilizada','arma de fogo','roubo-arma'],['local do fato','farmácia','roubo-local'],['meio utilizado / modo de abordagem','a pé','roubo-meio'],['modo de abordagem','a pé','roubo-modo'],['estabelecimento','farmácia são joão','roubo-estabelecimento'],['tipo de roubo (próprio ou impróprio)','próprio','roubo-tipo'],['logradouro','av. praia de belas','roubo-logradouro']].forEach(x=>robberyChart(d,x[0],x[1],x[2]));orcrim(d,'#p-orcrim-vitima','orcrim-vitima');orcrim(d,'#p-orcrim-autores','orcrim-autores');cia(d)}
 const f=document.getElementById('dash');f.addEventListener('load',()=>{const run=()=>{try{process(f.contentDocument)}catch(e){}};run();setTimeout(run,700);setTimeout(run,1600);setTimeout(run,3000);try{const d=f.contentDocument;if(d&&d.body){new MutationObserver(()=>{clearTimeout(window.__allBars);window.__allBars=setTimeout(run,250)}).observe(d.body,{childList:true,subtree:true})}}catch(e){}});
 </script>
 </body>
