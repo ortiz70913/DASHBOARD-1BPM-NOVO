@@ -28,7 +28,7 @@ const configs=[
  {title:'estabelecimento',anchor:'farmácia são joão'},
  {title:'tipo de roubo (próprio ou impróprio)',anchor:'próprio'},
  {title:'logradouro',anchor:'av. praia de belas'},
- {title:'incidência por companhia',anchor:'2ª cia'}
+ {title:'incidência por companhia',required:['2ª cia','1ª cia','3ª cia']}
 ];
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
 function getPercent(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
@@ -41,12 +41,21 @@ function getCount(t){
  return 0;
 }
 function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||null}
-function findSource(heading,anchor){
+function findSource(heading,cfg){
  let node=heading.parentElement;
- for(let level=0;level<10&&node;level++,node=node.parentElement){
+ for(let level=0;level<12&&node;level++,node=node.parentElement){
   const sources=[...node.querySelectorAll('.bars')];
-  const hit=sources.find(s=>norm(s.textContent).includes(anchor) && s.querySelectorAll('.bar').length>=2);
-  if(hit)return hit;
+  const candidates=sources.filter(s=>s.querySelectorAll('.bar').length>=2);
+  if(cfg.required&&cfg.required.length){
+   const best=candidates.find(s=>{
+    const txt=norm(s.textContent);
+    return cfg.required.every(a=>txt.includes(a));
+   });
+   if(best)return best;
+  }else if(cfg.anchor){
+   const hit=candidates.find(s=>norm(s.textContent).includes(cfg.anchor));
+   if(hit)return hit;
+  }
  }
  return null;
 }
@@ -73,7 +82,7 @@ function makeChart(doc,heading,source){
 function process(doc){
  if(!doc||!doc.body)return;
  if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}
- configs.forEach(c=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c.anchor);if(!s)return;makeChart(doc,h,s)});
+ configs.forEach(c=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s)});
 }
 const frame=document.getElementById('dash');
 frame.addEventListener('load',()=>{
