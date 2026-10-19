@@ -40,9 +40,7 @@ function findSource(heading,cfg){let node=heading.parentElement;for(let level=0;
 function buildChart(doc,heading,data,key){if(!data.length)return null;const panel=heading.parentElement;if(panel.querySelector('.roubo-bar-chart[data-roubo-chart="'+key+'"]'))return null;const max=Math.max(...data.map(x=>x.count),1);const chart=doc.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart=key;chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');heading.parentNode.insertBefore(chart,heading.nextSibling);return chart}
 function makeChart(doc,heading,source,key){const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');const name=String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:getCount(r.textContent),pct:getPercent(r.textContent)}}).filter(x=>x.name&&x.count>0&&x.pct>0);const chart=buildChart(doc,heading,data,key);if(chart)source.classList.add('roubo-source-hidden')}
 
-function findCiaHeading(doc){
-  return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)==='incidência por companhia')||null;
-}
+function findCiaHeading(doc){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)==='incidência por companhia')||null;}
 
 function extractCiaRows(panel){
   const names=['2ª cia','1ª cia','3ª cia'];
@@ -51,7 +49,7 @@ function extractCiaRows(panel){
     const candidates=[...panel.querySelectorAll('*')].filter(e=>{
       if(e.closest('.roubo-cia-chart')) return false;
       const t=norm(e.textContent);
-      return t.includes(name) && /\d+(?:[.,]\d+)?\s*%/.test(t) && t.length<=220;
+      return t.includes(name) && /\d+(?:[.,]\d+)?\s*%/.test(t) && t.length<=260;
     }).sort((a,b)=>a.textContent.length-b.textContent.length);
     if(!candidates.length) continue;
     const e=candidates[0];
@@ -67,40 +65,40 @@ function extractCiaRows(panel){
   return result;
 }
 
-function hideCiaOriginalRow(source, panel){
+function hideCiaOriginalRow(source,panel){
+  // O dashboard possui subelementos separados para nome, valor e "Novo registro".
+  // Subimos a árvore até o maior bloco que contém SOMENTE esta companhia.
   let node=source;
-  // Prefer the actual row used by the dashboard.
-  const row=source.closest('.ciarow,.bar,.hb');
-  if(row && row!==panel) { row.classList.add('roubo-source-hidden'); return; }
-  // Otherwise find the smallest ancestor that contains the complete row text.
-  for(let i=0;i<6 && node && node!==panel;i++,node=node.parentElement){
+  let best=source;
+  const other=/\b(?:1ª|2ª|3ª)\s*cia\b/gi;
+  for(let i=0;i<10 && node && node!==panel;i++,node=node.parentElement){
     const t=norm(node.textContent);
-    if(t.length<=180 && /(?:1ª|2ª|3ª)\s*cia/.test(t) && /\d+(?:[.,]\d+)?\s*%/.test(t)){
-      node.classList.add('roubo-source-hidden');
-      return;
-    }
+    if(!t || t.length>500) break;
+    const ciaCount=(t.match(other)||[]).length;
+    if(t.includes('novo registro') || /\d+(?:[.,]\d+)?\s*%/.test(t)) best=node;
+    if(ciaCount>1) break;
   }
-  source.classList.add('roubo-source-hidden');
+  best.classList.add('roubo-source-hidden');
 }
 
 function makeCiaChart(doc){
   if(doc.querySelector('.roubo-cia-chart')) return;
-  const heading=findCiaHeading(doc);
-  if(!heading) return;
+  const heading=findCiaHeading(doc); if(!heading)return;
   let panel=heading.parentElement;
-  for(let i=0;i<12 && panel;i++,panel=panel.parentElement){
+  for(let i=0;i<12&&panel;i++,panel=panel.parentElement){
     const t=norm(panel.textContent);
     if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia')) break;
   }
-  if(!panel) return;
+  if(!panel)return;
   const data=extractCiaRows(panel);
-  if(data.length!==3) return;
+  if(data.length!==3)return;
   const max=Math.max(...data.map(x=>x.count),1);
   const chart=doc.createElement('div');
   chart.className='roubo-bar-chart roubo-cia-chart';
   chart.dataset.rouboChart='cia';
   chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
   heading.parentNode.insertBefore(chart,heading.nextSibling);
+  // Somente depois que as barras foram criadas, ocultamos as três linhas antigas.
   data.forEach(x=>hideCiaOriginalRow(x.source,panel));
 }
 
@@ -117,10 +115,7 @@ frame.addEventListener('load',()=>{
   run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);
   try{
     const d=frame.contentDocument;
-    if(d&&d.body){
-      const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});
-      observer.observe(d.body,{childList:true,subtree:true});
-    }
+    if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true});}
   }catch(e){}
 });
 </script>
