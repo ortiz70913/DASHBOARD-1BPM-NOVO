@@ -1,0 +1,113 @@
+name: Corrigir barras e valores
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/barras-fix-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar CSS final
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '/* BARRAS FINAL FIX 2026-10-19 */'
+          if marker in s:
+              print('Correcao ja aplicada.')
+              raise SystemExit(0)
+          css = r'''<style>
+          /* BARRAS FINAL FIX 2026-10-19 */
+          /* O valor fica fora da area preenchida da barra. */
+          #p-motiv .bars .bar>div,
+          #p-bairro .bars .bar>div{
+            width:calc(100% - 92px)!important;
+            max-width:calc(100% - 92px)!important;
+            overflow:visible!important;
+            position:relative!important;
+          }
+          #p-motiv .bars .bar>div>i,
+          #p-bairro .bars .bar>div>i{
+            width:100%!important;
+            max-width:100%!important;
+            overflow:hidden!important;
+            border-radius:7px!important;
+          }
+          #p-motiv .bars .bar>div>em,
+          #p-bairro .bars .bar>div>em{
+            position:absolute!important;
+            left:calc(100% + 10px)!important;
+            right:auto!important;
+            top:50%!important;
+            transform:translateY(-50%)!important;
+            width:82px!important;
+            min-width:82px!important;
+            max-width:82px!important;
+            margin:0!important;
+            padding:0!important;
+            text-align:right!important;
+            background:transparent!important;
+            color:var(--ink)!important;
+            white-space:nowrap!important;
+            z-index:5!important;
+          }
+          #p-motiv .bars .bar,
+          #p-bairro .bars .bar{
+            overflow:visible!important;
+          }
+          #p-motiv .bars,
+          #p-bairro .bars{
+            overflow:visible!important;
+          }
+          @media(max-width:900px){
+            #p-motiv .bars .bar>div,
+            #p-bairro .bars .bar>div{
+              width:calc(100% - 82px)!important;
+              max-width:calc(100% - 82px)!important;
+            }
+            #p-motiv .bars .bar>div>em,
+            #p-bairro .bars .bar>div>em{
+              left:calc(100% + 8px)!important;
+              width:74px!important;
+              min-width:74px!important;
+              max-width:74px!important;
+              font-size:.62rem!important;
+            }
+          }
+          @media(max-width:600px){
+            #p-motiv .bars .bar>div,
+            #p-bairro .bars .bar>div{
+              width:calc(100% - 78px)!important;
+              max-width:calc(100% - 78px)!important;
+            }
+            #p-motiv .bars .bar>div>em,
+            #p-bairro .bars .bar>div>em{
+              left:calc(100% + 6px)!important;
+              width:70px!important;
+              min-width:70px!important;
+              max-width:70px!important;
+            }
+          }
+          </style>'''
+          if '</head>' not in s:
+              raise SystemExit('Nao encontrei </head> em index.html')
+          s=s.replace('</head>',css+'\n</head>',1)
+          p.write_text(s,encoding='utf-8')
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Corrigir definitivamente valores das barras"
+          git push
