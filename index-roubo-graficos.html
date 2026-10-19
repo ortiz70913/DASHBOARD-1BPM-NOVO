@@ -27,7 +27,8 @@ const configs=[
  {title:'modo de abordagem',anchor:'a pé'},
  {title:'estabelecimento',anchor:'farmácia são joão'},
  {title:'tipo de roubo (próprio ou impróprio)',anchor:'próprio'},
- {title:'logradouro',anchor:'av. praia de belas'}
+ {title:'logradouro',anchor:'av. praia de belas'},
+ {title:'incidência por companhia',anchor:'2ª cia'}
 ];
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
 function getPercent(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
@@ -36,7 +37,7 @@ function getCount(t){
  const pm=text.match(/\d+(?:[.,]\d+)?\s*%/);
  const before=pm?text.slice(0,pm.index):text;
  const nums=before.match(/\d+/g)||[];
- if(nums.length>=2)return parseInt(nums[1],10)||0;
+ if(nums.length>=2)return parseInt(nums[nums.length-1],10)||0;
  return 0;
 }
 function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||null}
