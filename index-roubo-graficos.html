@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dashboard 1º BPM — Gráficos</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}
+iframe{width:100%;height:100%;border:0;display:block}
+</style>
 </head>
 <body>
 <iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
@@ -32,70 +35,94 @@ const configs=[
 function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
 function getPercent(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
 function getCount(t){const text=String(t||'');const pm=text.match(/\d+(?:[.,]\d+)?\s*%/);const before=pm?text.slice(0,pm.index):text;const nums=before.match(/\d+/g)||[];return nums.length>=2?parseInt(nums[nums.length-1],10)||0:0}
-function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||[...doc.querySelectorAll('body *')].filter(e=>e.children.length===0&&norm(e.textContent)===title).sort((a,b)=>a.textContent.length-b.textContent.length)[0]||null}
+function findHeading(doc,title){return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>norm(h.textContent)===title)||null}
 function findSource(heading,cfg){let node=heading.parentElement;for(let level=0;level<12&&node;level++,node=node.parentElement){const sources=[...node.querySelectorAll('.bars')];const hit=sources.filter(s=>s.querySelectorAll('.bar').length>=2).find(s=>norm(s.textContent).includes(cfg.anchor));if(hit)return hit}return null}
 function buildChart(doc,heading,data,key){if(!data.length)return null;const panel=heading.parentElement;if(panel.querySelector('.roubo-bar-chart[data-roubo-chart="'+key+'"]'))return null;const max=Math.max(...data.map(x=>x.count),1);const chart=doc.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart=key;chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');heading.parentNode.insertBefore(chart,heading.nextSibling);return chart}
 function makeChart(doc,heading,source,key){const rows=[...source.querySelectorAll('.bar')];const data=rows.map(r=>{const b=r.querySelector('b');const name=String(b?b.textContent:r.textContent).trim().replace(/^\s*\d+\s*[º°.]?\s*/,'').trim();return{name,count:getCount(r.textContent),pct:getPercent(r.textContent)}}).filter(x=>x.name&&x.count>0&&x.pct>0);const chart=buildChart(doc,heading,data,key);if(chart)source.classList.add('roubo-source-hidden')}
+
+function findCiaHeading(doc){
+  return [...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(e=>norm(e.textContent)==='incidência por companhia')||null;
+}
+
+function extractCiaRows(panel){
+  const names=['2ª cia','1ª cia','3ª cia'];
+  const result=[];
+  for(const name of names){
+    const candidates=[...panel.querySelectorAll('*')].filter(e=>{
+      if(e.closest('.roubo-cia-chart')) return false;
+      const t=norm(e.textContent);
+      return t.includes(name) && /\d+(?:[.,]\d+)?\s*%/.test(t) && t.length<=220;
+    }).sort((a,b)=>a.textContent.length-b.textContent.length);
+    if(!candidates.length) continue;
+    const e=candidates[0];
+    const t=e.textContent.replace(/\s+/g,' ').trim();
+    const pm=t.match(/(\d+(?:[.,]\d+)?)\s*%/);
+    if(!pm) continue;
+    const before=t.slice(0,pm.index);
+    const nums=before.match(/\d+/g)||[];
+    const count=nums.length?parseInt(nums[nums.length-1],10):0;
+    if(count<=0) continue;
+    result.push({name:name.toUpperCase(),count,pct:parseFloat(pm[1].replace(',','.')),source:e});
+  }
+  return result;
+}
+
+function hideCiaOriginalRow(source, panel){
+  let node=source;
+  // Prefer the actual row used by the dashboard.
+  const row=source.closest('.ciarow,.bar,.hb');
+  if(row && row!==panel) { row.classList.add('roubo-source-hidden'); return; }
+  // Otherwise find the smallest ancestor that contains the complete row text.
+  for(let i=0;i<6 && node && node!==panel;i++,node=node.parentElement){
+    const t=norm(node.textContent);
+    if(t.length<=180 && /(?:1ª|2ª|3ª)\s*cia/.test(t) && /\d+(?:[.,]\d+)?\s*%/.test(t)){
+      node.classList.add('roubo-source-hidden');
+      return;
+    }
+  }
+  source.classList.add('roubo-source-hidden');
+}
+
 function makeCiaChart(doc){
- if(doc.querySelector('.roubo-cia-chart'))return;
- const heading=[...doc.querySelectorAll('h1,h2,h3,h4,.title,.hd,body *')].find(e=>norm(e.textContent)==='incidência por companhia');
- if(!heading)return;
- let panel=heading.parentElement;
- for(let i=0;i<12&&panel;i++,panel=panel.parentElement){const t=norm(panel.textContent);if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia')&&t.includes('43,2%')&&t.includes('29,5%')&&t.includes('27,3%'))break}
- if(!panel)return;
- const wanted=[['2ª cia',43.2],['1ª cia',29.5],['3ª cia',27.3]], rows=[];
- for(const [name,pctWanted] of wanted){
-   const candidates=[...panel.querySelectorAll('*')].filter(e=>{if(e.closest('.roubo-bar-chart'))return false;if(e.children.length>6)return false;const t=norm(e.textContent);if(!t.includes(name))return false;const m=t.match(/(\d+(?:[.,]\d+)?)\s*%/);return m&&Math.abs(parseFloat(m[1].replace(',','.'))-pctWanted)<0.05}).sort((a,b)=>a.textContent.length-b.textContent.length);
-   if(candidates.length)rows.push(candidates[0]);
- }
- if(rows.length!==3)return;
- const data=rows.map(r=>{const t=r.textContent.replace(/\s+/g,' ').trim(),nm=t.match(/(2ª\s*CIA|1ª\s*CIA|3ª\s*CIA)/i),pm=t.match(/(\d+(?:[.,]\d+)?)\s*%/),before=pm?t.slice(0,pm.index):t,nums=before.match(/\d+/g)||[];return{name:nm?nm[1].replace(/\s+/g,' ').toUpperCase():t,count:nums.length?parseInt(nums[nums.length-1],10):0,pct:pm?parseFloat(pm[1].replace(',','.')):0}});
- if(data.some(x=>x.count<=0))return;
- const max=Math.max(...data.map(x=>x.count),1),chart=doc.createElement('div');chart.className='roubo-bar-chart roubo-cia-chart';chart.dataset.rouboChart='cia';chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
- heading.parentNode.insertBefore(chart,heading.nextSibling);
- hideCiaOriginalRows(panel,doc,chart);
+  if(doc.querySelector('.roubo-cia-chart')) return;
+  const heading=findCiaHeading(doc);
+  if(!heading) return;
+  let panel=heading.parentElement;
+  for(let i=0;i<12 && panel;i++,panel=panel.parentElement){
+    const t=norm(panel.textContent);
+    if(t.includes('2ª cia')&&t.includes('1ª cia')&&t.includes('3ª cia')) break;
+  }
+  if(!panel) return;
+  const data=extractCiaRows(panel);
+  if(data.length!==3) return;
+  const max=Math.max(...data.map(x=>x.count),1);
+  const chart=doc.createElement('div');
+  chart.className='roubo-bar-chart roubo-cia-chart';
+  chart.dataset.rouboChart='cia';
+  chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
+  heading.parentNode.insertBefore(chart,heading.nextSibling);
+  data.forEach(x=>hideCiaOriginalRow(x.source,panel));
 }
-function hideCiaOriginalRows(panel,doc,chart){
- const wanted=[['2ª cia','43,2%'],['1ª cia','29,5%'],['3ª cia','27,3%']];
- // Esconde o contêiner completo de cada linha original, subindo na árvore até
- // encontrar o menor elemento que também contenha "Novo registro".
- wanted.forEach(([cia,pct])=>{
-   const leaves=[...panel.querySelectorAll('*')].filter(e=>{
-     if(e.closest('.roubo-bar-chart'))return false;
-     if(e.children.length!==0)return false;
-     const t=norm(e.textContent);
-     return t.includes('novo registro')&&(t.includes(cia)||t.includes(pct));
-   });
-   leaves.forEach(leaf=>{
-     let node=leaf;
-     let best=null;
-     for(let i=0;i<8&&node&&node!==panel;i++,node=node.parentElement){
-       const t=norm(node.textContent);
-       if(t.length>20&&t.length<180&&t.includes(cia)&&t.includes(pct)&&t.includes('novo registro')) best=node;
-     }
-     if(best)best.classList.add('roubo-source-hidden');
-   });
- });
- // Fallback: localiza qualquer bloco curto que contenha companhia + percentual
- // + Novo registro e o oculta. Nunca toca no gráfico novo.
- [...panel.querySelectorAll('*')].forEach(e=>{
-   if(e.closest('.roubo-bar-chart'))return;
-   if(e.children.length>8)return;
-   const t=norm(e.textContent);
-   if(t.length<180&&t.includes('novo registro')&&/(?:1ª|2ª|3ª)\s*cia/.test(t)&&/(?:43,2|29,5|27,3)%/.test(t))e.classList.add('roubo-source-hidden');
- });
- // Se as linhas originais estiverem em irmãos diretos do gráfico, oculta esses
- // irmãos até o rodapé explicativo, preservando o rodapé.
- let next=chart.nextElementSibling;
- while(next){
-   const t=norm(next.textContent);
-   if(t.includes('total de ocorrências de cada companhia'))break;
-   if(/(?:1ª|2ª|3ª)\s*cia/.test(t)||t.includes('novo registro'))next.classList.add('roubo-source-hidden');
-   next=next.nextElementSibling;
- }
+
+function process(doc){
+  if(!doc||!doc.body)return;
+  if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}
+  configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});
+  makeCiaChart(doc);
 }
-function process(doc){if(!doc||!doc.body)return;if(!doc.getElementById('roubo-bars-css')){const st=doc.createElement('style');st.id='roubo-bars-css';st.textContent=css;doc.head.appendChild(st)}configs.forEach((c,i)=>{const h=findHeading(doc,c.title);if(!h)return;const s=findSource(h,c);if(!s)return;makeChart(doc,h,s,'roubo-'+i)});makeCiaChart(doc)}
-const frame=document.getElementById('dash');frame.addEventListener('load',()=>{const run=()=>{try{process(frame.contentDocument)}catch(e){}};run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);try{const d=frame.contentDocument;if(d&&d.body){const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});observer.observe(d.body,{childList:true,subtree:true})}}catch(e){}});
+
+const frame=document.getElementById('dash');
+frame.addEventListener('load',()=>{
+  const run=()=>{try{process(frame.contentDocument)}catch(e){}};
+  run();setTimeout(run,800);setTimeout(run,1800);setTimeout(run,3500);
+  try{
+    const d=frame.contentDocument;
+    if(d&&d.body){
+      const observer=new MutationObserver(()=>{clearTimeout(window.__rouboTimer);window.__rouboTimer=setTimeout(run,300)});
+      observer.observe(d.body,{childList:true,subtree:true});
+    }
+  }catch(e){}
+});
 </script>
 </body>
 </html>
