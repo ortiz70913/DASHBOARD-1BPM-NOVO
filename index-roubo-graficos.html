@@ -63,31 +63,22 @@ function extractCiaRows(panel){
   return result;
 }
 
-// Remove somente as linhas originais que exibem "Novo registro".
-// O bloco correto é identificado por conter UMA companhia + percentual + "Novo registro".
-// Nunca sobe até o painel inteiro e nunca toca no gráfico criado.
-function hideCiaOriginalRows(panel){
-  const cia=/\b(?:1ª|2ª|3ª)\s*cia\b/i;
-  const nodes=[...panel.querySelectorAll('*')].filter(el=>{
-    if(el.closest('.roubo-cia-chart')) return false;
-    const t=el.textContent.replace(/\s+/g,' ').trim();
-    return /novo registro/i.test(t) && cia.test(t) && /\d+(?:[.,]\d+)?\s*%/.test(t) && t.length<=260;
+// Esconde somente o(s) bloco(s) original(is) de texto que contêm "Novo registro".
+// A busca sobe apenas até o filho direto do painel da Incidência por companhia.
+// Assim o gráfico criado permanece intacto e a descrição final também permanece.
+function hideCiaOriginalRows(panel,chart){
+  const direct=[];
+  [...panel.querySelectorAll('*')].forEach(el=>{
+    if(el===chart || el.closest('.roubo-cia-chart')) return;
+    const t=(el.textContent||'').replace(/\s+/g,' ').trim();
+    if(!/novo registro/i.test(t)) return;
+    if(!/(?:1ª|2ª|3ª)\s*cia/i.test(t)) return;
+    if(!/\d+(?:[.,]\d+)?\s*%/.test(t)) return;
+    let top=el;
+    while(top.parentElement && top.parentElement!==panel) top=top.parentElement;
+    if(top.parentElement===panel && top!==chart && !direct.includes(top)) direct.push(top);
   });
-  const chosen=[];
-  nodes.sort((a,b)=>a.textContent.length-b.textContent.length);
-  for(const el of nodes){
-    if(chosen.some(x=>x.contains(el))) continue;
-    let node=el;
-    let best=null;
-    for(let i=0;i<8 && node && node!==panel;i++,node=node.parentElement){
-      if(node.closest('.roubo-cia-chart')) break;
-      const t=node.textContent.replace(/\s+/g,' ').trim();
-      const ciaMatches=t.match(/\b(?:1ª|2ª|3ª)\s*cia\b/gi)||[];
-      if(t.length>320 || ciaMatches.length>1) break;
-      if(/novo registro/i.test(t) && ciaMatches.length===1 && /\d+(?:[.,]\d+)?\s*%/.test(t)) best=node;
-    }
-    if(best){best.classList.add('roubo-source-hidden');chosen.push(best);}
-  }
+  direct.forEach(el=>el.classList.add('roubo-source-hidden'));
 }
 
 function makeCiaChart(doc){
@@ -107,7 +98,8 @@ function makeCiaChart(doc){
   chart.dataset.rouboChart='cia';
   chart.innerHTML=data.map(x=>{const w=Math.max(2,x.count/max*100);return '<div class="roubo-bar-row"><div class="roubo-bar-name">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
   heading.parentNode.insertBefore(chart,heading.nextSibling);
-  hideCiaOriginalRows(panel);
+  // Somente depois que o gráfico existe, remove os blocos originais.
+  hideCiaOriginalRows(panel,chart);
 }
 
 function process(doc){
