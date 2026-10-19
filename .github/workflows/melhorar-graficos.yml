@@ -15,6 +15,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Corrigir espaço entre nome e barra
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          old = '.critical-item{display:grid;grid-template-columns:34px minmax(120px,1fr) minmax(80px,1fr) 56px;gap:10px;align-items:center}'
+          new = '.critical-item{display:grid;grid-template-columns:34px max-content minmax(0,1fr) 32px;gap:6px;align-items:center}'
+          if old in s:
+              s = s.replace(old, new, 1)
+          else:
+              target = 'grid-template-columns:34px minmax(120px,1fr) minmax(80px,1fr) 56px'
+              if target in s:
+                  s = s.replace(target, 'grid-template-columns:34px max-content minmax(0,1fr) 32px', 1)
+              else:
+                  raise SystemExit('Regra .critical-item não encontrada no index.html')
+          p.write_text(s, encoding='utf-8')
+
       - name: Melhorar gráficos horizontais
         shell: python
         run: |
@@ -90,5 +108,5 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add index.html supabase-config.js
           git diff --cached --quiet && echo 'Nenhuma alteração necessária.' && exit 0
-          git commit -m 'Corrigir gráfico mensal da aba roubo a pedestre'
+          git commit -m 'Corrigir espaço entre nome e barra'
           git push
