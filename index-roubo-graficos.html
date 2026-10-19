@@ -1,54 +1,61 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dashboard 1º BPM — Roubo a Estabelecimento</title><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style></head><body><iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe><script>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard 1º BPM — Roubo a Estabelecimento</title>
+<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
+</head>
+<body>
+<iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
+<script>
 const css=`
-.roubo-bar-chart{display:flex!important;flex-direction:column!important;gap:14px!important;width:100%!important;margin:12px 0 6px!important;padding:4px 0!important}
-.roubo-bar-row{display:grid!important;grid-template-columns:190px minmax(0,1fr) 110px!important;gap:12px!important;align-items:center!important;width:100%!important;min-height:38px!important}
-.roubo-bar-name{font-size:.86rem!important;font-weight:800!important;color:var(--ink,#0f1c2e)!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-.roubo-bar-track{height:25px!important;width:100%!important;background:#e9eef4!important;border:1px solid #d4dce6!important;border-radius:8px!important;overflow:hidden!important;box-sizing:border-box!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.05)!important}
-.roubo-bar-fill{height:100%!important;border-radius:7px!important;background:linear-gradient(90deg,var(--acc,#3867a8),var(--hi,#0b2545))!important}
-.roubo-bar-value{font-size:.78rem!important;font-weight:900!important;color:var(--ink,#0f1c2e)!important;text-align:right!important;white-space:nowrap!important}
-@media(max-width:800px){.roubo-bar-row{grid-template-columns:145px minmax(0,1fr) 90px!important;gap:8px!important}.roubo-bar-track{height:23px!important}}
-@media(max-width:550px){.roubo-bar-row{grid-template-columns:1fr!important;gap:3px!important}.roubo-bar-name{font-size:.78rem!important}.roubo-bar-value{text-align:left!important;font-size:.72rem!important}.roubo-bar-track{height:21px!important}}
+.roubo-bar-chart{display:flex!important;flex-direction:column!important;gap:13px!important;width:100%!important;margin:12px 0 8px!important;padding:2px 0!important}
+.roubo-bar-row{display:grid!important;grid-template-columns:205px minmax(180px,1fr) 105px!important;gap:12px!important;align-items:center!important;width:100%!important;min-height:36px!important}
+.roubo-bar-name{font-size:.88rem!important;font-weight:800!important;color:#10233d!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.roubo-bar-track{height:24px!important;width:100%!important;background:#e8edf3!important;border:1px solid #ccd6e1!important;border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.06)!important}
+.roubo-bar-fill{height:100%!important;border-radius:6px!important;background:linear-gradient(90deg,#8aa9cc 0%,#183b63 100%)!important;transition:width .35s ease!important}
+.roubo-bar-value{font-size:.82rem!important;font-weight:900!important;color:#10233d!important;text-align:right!important;white-space:nowrap!important}
+.roubo-source-hidden{display:none!important}
+@media(max-width:900px){.roubo-bar-row{grid-template-columns:170px minmax(150px,1fr) 95px!important;gap:8px!important}}
+@media(max-width:600px){.roubo-bar-row{grid-template-columns:1fr!important;gap:4px!important}.roubo-bar-name{font-size:.8rem!important}.roubo-bar-value{text-align:left!important;font-size:.75rem!important}.roubo-bar-track{height:21px!important}}
 `;
-function countFromRow(r){
-  const text=String(r.textContent||'');
-  const pct=text.match(/\d+(?:[.,]\d+)?\s*%/);
-  const before=pct?text.slice(0,pct.index):text;
-  const nums=before.match(/\d+/g)||[];
-  if(nums.length<2)return 0;
-  return parseInt(nums[1],10)||0;
+const wanted=['arma utilizada','local do fato','meio utilizado / modo de abordagem','modo de abordagem'];
+function norm(s){return String(s||'').replace(/\s+/g,' ').trim().toLowerCase()}
+function pct(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
+function count(t){const p=String(t||'').match(/\d+(?:[.,]\d+)?\s*%/);const a=p?String(t).slice(0,p.index):String(t);const nums=a.match(/\d+/g)||[];return nums.length>=2?parseInt(nums[1],10)||0:0}
+function headingFor(el){return [...el.querySelectorAll('h1,h2,h3,h4,.title,.hd')].find(h=>wanted.includes(norm(h.textContent)))||null}
+function sourceFor(panel){return panel.querySelector('.bars')||null}
+function makeChart(d,panel,heading,source){
+ if(panel.dataset.rouboDone==='1')return;
+ const rows=[...source.querySelectorAll('.bar')];
+ if(!rows.length)return;
+ const data=rows.map(r=>{const b=r.querySelector('b');const name=norm(b?b.textContent:r.textContent).replace(/^\d+\s*/,'');return{name,count:count(r.textContent),pct:pct(r.textContent)}}).filter(x=>x.name&&x.count>=0);
+ if(!data.length)return;
+ const max=Math.max(...data.map(x=>x.count),1);
+ const chart=d.createElement('div');chart.className='roubo-bar-chart';chart.dataset.rouboChart='1';
+ chart.innerHTML=data.map(x=>{const w=x.count?Math.max(2,x.count/max*100):0;return '<div class="roubo-bar-row"><div class="roubo-bar-name" title="'+x.name.replace(/"/g,'&quot;')+'">'+x.name+'</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:'+w+'%"></div></div><div class="roubo-bar-value">'+x.count+' · '+x.pct.toFixed(1).replace('.',',')+'%</div></div>'}).join('');
+ heading.parentNode.insertBefore(chart,heading.nextSibling);
+ source.classList.add('roubo-source-hidden');
+ panel.dataset.rouboDone='1';
 }
-function percentFrom(t){const m=String(t||'').match(/(\d+(?:[.,]\d+)?)\s*%/);return m?parseFloat(m[1].replace(',','.')):0}
-function findPanels(d){return [...d.querySelectorAll('section,article,.card,.panel,div')].filter(x=>{const h=x.querySelector(':scope > h1,:scope > h2,:scope > h3,:scope > h4,:scope > .title,:scope > .hd');if(!h)return false;const t=h.textContent.trim().toLowerCase();return (t==='arma utilizada'||t==='local do fato'||t==='meio utilizado'||t==='modo de abordagem')&&x.querySelector(':scope > .bars')})}
-function buildPanel(d,panel){
-  if(panel.dataset.rouboProcessed==='1')return;
-  const source=panel.querySelector(':scope > .bars');if(!source)return;
-  const rows=[...source.querySelectorAll(':scope > .bar')];if(!rows.length)return;
-  let chart=panel.querySelector(':scope > .roubo-bar-chart');
-  if(!chart){chart=d.createElement('div');chart.className='roubo-bar-chart';panel.insertBefore(chart,source)}
-  const data=rows.map(r=>{const name=r.querySelector(':scope > b')?.textContent.trim()||'';return{name,count:countFromRow(r),pct:percentFrom(r.textContent)}}).filter(x=>x.name&&x.count>=0);
-  const max=Math.max(1,...data.map(x=>x.count));
-  chart.innerHTML=data.map(x=>{const w=x.count?Math.max(2,(x.count/max)*100):0;return `<div class="roubo-bar-row"><div class="roubo-bar-name" title="${x.name.replace(/"/g,'&quot;')}">${x.name}</div><div class="roubo-bar-track"><div class="roubo-bar-fill" style="width:${w}%"></div></div><div class="roubo-bar-value">${x.count} · ${x.pct.toFixed(1).replace('.',',')}%</div></div>`}).join('');
-  source.style.display='none';panel.dataset.rouboProcessed='1';
-}
-function removeDuplicatePanels(d){
-  const seen=new Set();
-  findPanels(d).forEach(p=>{
-    const h=p.querySelector(':scope > h1,:scope > h2,:scope > h3,:scope > h4,:scope > .title,:scope > .hd');
-    const key=h?.textContent.trim().toLowerCase();
-    if(!key)return;
-    if(seen.has(key)){p.remove();return}
-    seen.add(key);
-  });
-}
-function fix(){
-  const f=document.getElementById('dash');
-  try{const d=f.contentDocument;if(!d||!d.body)return;
-    if(!d.getElementById('roubo-bars-css')){const st=d.createElement('style');st.id='roubo-bars-css';st.textContent=css;d.head.appendChild(st)}
-    removeDuplicatePanels(d);
-    findPanels(d).forEach(p=>buildPanel(d,p));
-  }catch(e){}
+function process(d){
+ if(!d||!d.body||!d.head)return;
+ if(!d.getElementById('roubo-bars-css')){const st=d.createElement('style');st.id='roubo-bars-css';st.textContent=css;d.head.appendChild(st)}
+ const heads=[...d.querySelectorAll('h1,h2,h3,h4,.title,.hd')];
+ heads.forEach(h=>{
+  const title=norm(h.textContent);
+  if(!wanted.includes(title))return;
+  let node=h.parentElement, source=null, panel=null;
+  for(let i=0;i<6&&node;i++,node=node.parentElement){const s=sourceFor(node);if(s){source=s;panel=node;break}}
+  if(!source||!panel)return;
+  makeChart(d,panel,h,source);
+ });
 }
 const frame=document.getElementById('dash');
-frame.addEventListener('load',()=>{fix();setTimeout(fix,700);setTimeout(fix,1600)});
-</script></body></html>
+frame.addEventListener('load',()=>{
+ setTimeout(()=>{try{process(frame.contentDocument)}catch(e){}},900);
+});
+</script>
+</body>
+</html>
