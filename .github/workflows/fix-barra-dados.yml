@@ -1,0 +1,90 @@
+name: Corrigir barras e dados
+
+on:
+  push:
+    paths:
+      - .github/barra-dados-trigger.txt
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Aplicar correção definitiva das barras
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '/* FIX BARRAS DADOS 2026-10-19 */'
+          if marker in s:
+              print('Correção já aplicada.')
+              raise SystemExit(0)
+          css = r'''<style>
+          /* FIX BARRAS DADOS 2026-10-19 */
+          @media (min-width:601px){
+            #p-motiv .bars .bar,
+            #p-bairro .bars .bar{
+              grid-template-columns:fit-content(240px) minmax(0,1fr) 72px!important;
+              grid-template-rows:24px 12px!important;
+              column-gap:7px!important;
+              row-gap:1px!important;
+              overflow:visible!important;
+            }
+            #p-motiv .bars .bar>div,
+            #p-bairro .bars .bar>div{
+              grid-column:2!important;
+              grid-row:1!important;
+              position:relative!important;
+              width:100%!important;
+              min-width:0!important;
+              height:20px!important;
+              min-height:20px!important;
+              margin:0!important;
+              overflow:hidden!important;
+            }
+            #p-motiv .bars .bar>div>em,
+            #p-bairro .bars .bar>div>em{
+              position:absolute!important;
+              left:calc(100% + 7px)!important;
+              right:auto!important;
+              top:50%!important;
+              transform:translateY(-50%)!important;
+              width:72px!important;
+              margin:0!important;
+              padding:0!important;
+              text-align:right!important;
+              white-space:nowrap!important;
+              overflow:visible!important;
+              z-index:10!important;
+              color:var(--ink)!important;
+              font-size:.68rem!important;
+              font-weight:800!important;
+            }
+            #p-motiv .bars .bar .bardelta,
+            #p-bairro .bars .bar .bardelta{
+              grid-column:2!important;
+              grid-row:2!important;
+              width:100%!important;
+              margin:0!important;
+            }
+          }
+          </style>'''
+          if '</head>' not in s:
+              raise SystemExit('Não encontrei </head> em index.html')
+          s = s.replace('</head>', css + '\n</head>', 1)
+          p.write_text(s, encoding='utf-8')
+      - name: Commit e push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet && exit 0
+          git commit -m "Corrigir sobreposição das barras com os dados"
+          git push
