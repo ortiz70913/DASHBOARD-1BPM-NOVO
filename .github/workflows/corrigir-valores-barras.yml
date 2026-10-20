@@ -44,6 +44,89 @@ jobs:
               print('showApp corrigido.')
           else:
               print('showApp ja corrigido ou trecho nao encontrado.')
+
+          # Grafico de barras dedicado para ROUBO A PEDESTRE.
+          # Reforca a faixa, altura, espacamento e preserva a largura
+          # percentual calculada pelo dashboard em cada barra.
+          marker = 'pedestre-bars-v1'
+          if marker not in s:
+              pedestre_css = r'''
+<style id="pedestre-bars-v1">
+#p-arma .hb,#p-local .hb,#p-abord .hb{
+  display:grid!important;
+  grid-template-columns:minmax(150px,240px) minmax(180px,1fr) 118px!important;
+  align-items:center!important;
+  gap:12px!important;
+  width:100%!important;
+  min-height:40px!important;
+  margin:8px 0!important;
+  padding:0!important;
+}
+#p-arma .hb>span,#p-local .hb>span,#p-abord .hb>span{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  font-weight:800!important;
+  line-height:1.2!important;
+}
+#p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{
+  display:block!important;
+  position:relative!important;
+  width:100%!important;
+  height:25px!important;
+  margin:0!important;
+  padding:0!important;
+  background:var(--line,#dfe5ec)!important;
+  border:1px solid rgba(15,28,46,.12)!important;
+  border-radius:7px!important;
+  overflow:hidden!important;
+}
+#p-arma .hb>div>i,#p-local .hb>div>i,#p-abord .hb>div>i{
+  display:block!important;
+  height:100%!important;
+  min-width:3px!important;
+  max-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  background:linear-gradient(90deg,var(--acc,#8aa9cc),var(--hi,#0b2545))!important;
+  border-radius:6px!important;
+  transition:width .25s ease!important;
+}
+#p-arma .hb.top>div>i,#p-local .hb.top>div>i,#p-abord .hb.top>div>i{
+  background:linear-gradient(90deg,#5d86b0,#0b2545)!important;
+}
+#p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{
+  width:118px!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:left!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+  font-weight:900!important;
+  font-size:.82rem!important;
+}
+#p-arma .hb>b>u,#p-local .hb>b>u,#p-abord .hb>b>u{
+  text-decoration:none!important;
+  color:var(--mut,#5b6b7f)!important;
+  font-size:.75rem!important;
+  font-weight:600!important;
+}
+@media(max-width:900px){
+  #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(110px,180px) minmax(130px,1fr) 100px!important;gap:8px!important}
+  #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:100px!important;font-size:.74rem!important}
+}
+@media(max-width:600px){
+  #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(88px,125px) minmax(80px,1fr) 86px!important;gap:6px!important;min-height:34px!important}
+  #p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{height:21px!important}
+  #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:86px!important;font-size:.64rem!important}
+  #p-arma .hb>b>u,#p-local .hb>b>u,#p-abord .hb>b>u{font-size:.58rem!important}
+}
+</style>
+'''
+              s = s.replace('</head>', pedestre_css + '\n</head>', 1)
+              print('Grafico de barras de Roubo a Pedestre ajustado.')
+
           p.write_text(s, encoding='utf-8')
 
           # Correcao visual existente das barras.
@@ -98,5 +181,5 @@ jobs:
             echo "Nenhuma alteracao necessaria."
             exit 0
           fi
-          git commit -m "Corrigir erro de elementos nulos no login [skip ci]"
+          git commit -m "Ajustar graficos de barras do Roubo a Pedestre [skip ci]"
           git push
