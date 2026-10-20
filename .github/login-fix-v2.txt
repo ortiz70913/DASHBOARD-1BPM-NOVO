@@ -1,1 +1,1 @@
-Executar correcao do login Supabase v2 - 2026-10-19
+Executar correcao definitiva do login Supabase v2 - 2026-10-20 15:39
