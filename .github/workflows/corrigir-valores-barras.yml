@@ -21,9 +21,6 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          # Correcao do erro de perfil no login: alguns elementos opcionais
-          # nao existem no layout atual, portanto nunca podem receber .style
-          # diretamente quando forem null.
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
           old_show = "function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='block';document.getElementById('userEmail').textContent=session?.user?.email||'';document.getElementById('userRole').textContent=ROLE_NAMES[role]||role;document.getElementById('up').style.display=['admin','operador'].includes(role)?'':'none';}"
@@ -41,13 +38,8 @@ jobs:
           }"""
           if old_show in s:
               s = s.replace(old_show, new_show, 1)
-              print('showApp corrigido.')
-          else:
-              print('showApp ja corrigido ou trecho nao encontrado.')
 
-          # Grafico de barras dedicado para ROUBO A PEDESTRE.
-          # Reforca a faixa, altura, espacamento e preserva a largura
-          # percentual calculada pelo dashboard em cada barra.
+          # Barras visiveis na aba ROUBO A PEDESTRE.
           marker = 'pedestre-bars-v1'
           if marker not in s:
               pedestre_css = r'''
@@ -55,81 +47,89 @@ jobs:
 #p-arma .hb,#p-local .hb,#p-abord .hb{
   display:grid!important;
   grid-template-columns:minmax(150px,240px) minmax(180px,1fr) 118px!important;
-  align-items:center!important;
-  gap:12px!important;
-  width:100%!important;
-  min-height:40px!important;
-  margin:8px 0!important;
-  padding:0!important;
+  align-items:center!important;gap:12px!important;width:100%!important;
+  min-height:40px!important;margin:8px 0!important;padding:0!important;
 }
 #p-arma .hb>span,#p-local .hb>span,#p-abord .hb>span{
-  min-width:0!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
-  white-space:nowrap!important;
-  font-weight:800!important;
-  line-height:1.2!important;
+  display:block!important;min-width:0!important;overflow:hidden!important;
+  text-overflow:ellipsis!important;white-space:nowrap!important;font-weight:800!important;
 }
 #p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{
-  display:block!important;
-  position:relative!important;
-  width:100%!important;
-  height:25px!important;
-  margin:0!important;
-  padding:0!important;
-  background:var(--line,#dfe5ec)!important;
-  border:1px solid rgba(15,28,46,.12)!important;
-  border-radius:7px!important;
-  overflow:hidden!important;
+  display:block!important;position:relative!important;width:100%!important;
+  height:25px!important;min-height:25px!important;margin:0!important;padding:0!important;
+  background:#e7edf4!important;border:1px solid #cbd6e2!important;
+  border-radius:7px!important;overflow:hidden!important;box-sizing:border-box!important;
 }
 #p-arma .hb>div>i,#p-local .hb>div>i,#p-abord .hb>div>i{
-  display:block!important;
-  height:100%!important;
-  min-width:3px!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  background:linear-gradient(90deg,var(--acc,#8aa9cc),var(--hi,#0b2545))!important;
-  border-radius:6px!important;
-  transition:width .25s ease!important;
+  display:block!important;height:100%!important;min-height:100%!important;
+  min-width:3px!important;max-width:100%!important;margin:0!important;padding:0!important;
+  background:linear-gradient(90deg,#5f87b1,#163b63)!important;
+  border-radius:6px!important;box-sizing:border-box!important;
 }
 #p-arma .hb.top>div>i,#p-local .hb.top>div>i,#p-abord .hb.top>div>i{
-  background:linear-gradient(90deg,#5d86b0,#0b2545)!important;
+  background:linear-gradient(90deg,#2f6397,#0b2d50)!important;
 }
 #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{
-  width:118px!important;
-  margin:0!important;
-  padding:0!important;
-  text-align:left!important;
-  white-space:nowrap!important;
-  overflow:visible!important;
-  font-weight:900!important;
-  font-size:.82rem!important;
+  display:block!important;width:118px!important;margin:0!important;padding:0!important;
+  text-align:left!important;white-space:nowrap!important;overflow:visible!important;font-weight:900!important;
 }
 #p-arma .hb>b>u,#p-local .hb>b>u,#p-abord .hb>b>u{
-  text-decoration:none!important;
-  color:var(--mut,#5b6b7f)!important;
-  font-size:.75rem!important;
-  font-weight:600!important;
+  text-decoration:none!important;font-weight:600!important;
 }
 @media(max-width:900px){
-  #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(110px,180px) minmax(130px,1fr) 100px!important;gap:8px!important}
-  #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:100px!important;font-size:.74rem!important}
+ #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(110px,180px) minmax(130px,1fr) 100px!important;gap:8px!important}
+ #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:100px!important;font-size:.74rem!important}
 }
 @media(max-width:600px){
-  #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(88px,125px) minmax(80px,1fr) 86px!important;gap:6px!important;min-height:34px!important}
-  #p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{height:21px!important}
-  #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:86px!important;font-size:.64rem!important}
-  #p-arma .hb>b>u,#p-local .hb>b>u,#p-abord .hb>b>u{font-size:.58rem!important}
+ #p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:minmax(88px,125px) minmax(80px,1fr) 86px!important;gap:6px!important;min-height:34px!important}
+ #p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{height:21px!important}
+ #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:86px!important;font-size:.64rem!important}
 }
 </style>
 '''
               s = s.replace('</head>', pedestre_css + '\n</head>', 1)
-              print('Grafico de barras de Roubo a Pedestre ajustado.')
+
+          # Forca o desenho diretamente nos elementos gerados pelo dashboard.
+          js_marker = 'pedestre-bars-js-v1'
+          if js_marker not in s:
+              pedestre_js = r'''<script id="pedestre-bars-js-v1">
+(function(){
+  function paint(){
+    ['p-arma','p-local','p-abord'].forEach(function(id){
+      var panel=document.getElementById(id);
+      if(!panel)return;
+      panel.querySelectorAll('.hb').forEach(function(row){
+        var track=row.children[1];
+        var fill=track&&track.children[0];
+        if(!track||!fill)return;
+        track.style.setProperty('display','block','important');
+        track.style.setProperty('position','relative','important');
+        track.style.setProperty('width','100%','important');
+        track.style.setProperty('height','25px','important');
+        track.style.setProperty('background','#e7edf4','important');
+        track.style.setProperty('border','1px solid #cbd6e2','important');
+        track.style.setProperty('border-radius','7px','important');
+        track.style.setProperty('overflow','hidden','important');
+        fill.style.setProperty('display','block','important');
+        fill.style.setProperty('height','100%','important');
+        fill.style.setProperty('min-width','3px','important');
+        fill.style.setProperty('border-radius','6px','important');
+        fill.style.setProperty('background','linear-gradient(90deg,#5f87b1,#163b63)','important');
+        var w=fill.style.width || fill.getAttribute('style') || '';
+        var m=String(w).match(/width\s*:\s*([^;]+)/i);
+        if(m)fill.style.setProperty('width',m[1].trim(),'important');
+      });
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',paint);else paint();
+  new MutationObserver(function(){paint()}).observe(document.body,{childList:true,subtree:true});
+  setTimeout(paint,300);setTimeout(paint,1000);setTimeout(paint,2500);
+})();
+</script>'''
+              s = s.replace('</body>', pedestre_js + '\n</body>', 1)
 
           p.write_text(s, encoding='utf-8')
 
-          # Correcao visual existente das barras.
           p = Path('supabase-config.js')
           s = p.read_text(encoding='utf-8')
           marker = 'dashboard-chart-value-outside-v1'
@@ -141,29 +141,9 @@ jobs:
   const style=document.createElement('style');
   style.id='dashboard-chart-value-outside-v1';
   style.textContent=`
-    #p-motiv .bars .bar>div,
-    #p-bairro .bars .bar>div{
-      width:calc(100% - 64px)!important;
-      margin-right:64px!important;
-      overflow:visible!important;
-    }
-    #p-motiv .bars .bar>div>em,
-    #p-bairro .bars .bar>div>em{
-      right:-61px!important;
-      top:50%!important;
-      color:var(--ink)!important;
-      background:transparent!important;
-      z-index:3!important;
-    }
-    @media(max-width:600px){
-      #p-motiv .bars .bar>div,
-      #p-bairro .bars .bar>div{
-        width:calc(100% - 58px)!important;
-        margin-right:58px!important;
-      }
-      #p-motiv .bars .bar>div>em,
-      #p-bairro .bars .bar>div>em{right:-55px!important}
-    }
+    #p-motiv .bars .bar>div,#p-bairro .bars .bar>div{width:calc(100% - 64px)!important;margin-right:64px!important;overflow:visible!important}
+    #p-motiv .bars .bar>div>em,#p-bairro .bars .bar>div>em{right:-61px!important;top:50%!important;color:var(--ink)!important;background:transparent!important;z-index:3!important}
+    @media(max-width:600px){#p-motiv .bars .bar>div,#p-bairro .bars .bar>div{width:calc(100% - 58px)!important;margin-right:58px!important}#p-motiv .bars .bar>div>em,#p-bairro .bars .bar>div>em{right:-55px!important}}
   `;
   document.head.appendChild(style);
 })();
@@ -181,5 +161,5 @@ jobs:
             echo "Nenhuma alteracao necessaria."
             exit 0
           fi
-          git commit -m "Ajustar graficos de barras do Roubo a Pedestre [skip ci]"
+          git commit -m "Forcar barras do Roubo a Pedestre [skip ci]"
           git push
