@@ -1,0 +1,47 @@
+name: Corrigir barras Roubo a Estabelecimento Comercial
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  corrigir:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Aplicar correção das barras
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = 'commercial-bars-fix-v1'
+          if marker in s:
+              print('Correção já aplicada.')
+              raise SystemExit(0)
+          css = r'''\n<style id="commercial-bars-fix-v1">\n/* commercial-bars-fix-v1: barras horizontais visíveis */\n#p-arma .bars,#p-local .bars,#p-abord .bars{\n  display:flex!important;\n  flex-direction:column!important;\n  width:100%!important;\n  gap:8px!important;\n  margin:0!important;\n  padding:0!important;\n}\n#p-arma .bars .bar,#p-local .bars .bar,#p-abord .bars .bar{\n  display:grid!important;\n  grid-template-columns:190px minmax(180px,1fr) 125px!important;\n  grid-template-rows:28px 14px!important;\n  column-gap:12px!important;\n  row-gap:1px!important;\n  align-items:center!important;\n  width:100%!important;\n  min-height:43px!important;\n  margin:0!important;\n  padding:0!important;\n  box-sizing:border-box!important;\n}\n#p-arma .bars .bar>b,#p-local .bars .bar>b,#p-abord .bars .bar>b{\n  grid-column:1!important;\n  grid-row:1 / span 2!important;\n  display:flex!important;\n  align-items:center!important;\n  gap:6px!important;\n  width:100%!important;\n  max-width:190px!important;\n  height:100%!important;\n  margin:0!important;\n  padding:0!important;\n  overflow:hidden!important;\n  white-space:nowrap!important;\n  text-overflow:ellipsis!important;\n  font-size:.86rem!important;\n  line-height:1.1!important;\n}\n#p-arma .bars .bar>b .ranknum,#p-local .bars .bar>b .ranknum,#p-abord .bars .bar>b .ranknum{\n  flex:0 0 25px!important;\n  min-width:25px!important;\n}\n#p-arma .bars .bar>div,#p-local .bars .bar>div,#p-abord .bars .bar>div{\n  grid-column:2!important;\n  grid-row:1!important;\n  position:relative!important;\n  display:block!important;\n  width:100%!important;\n  height:22px!important;\n  min-height:22px!important;\n  margin:0!important;\n  padding:0!important;\n  background:#e3e9f0!important;\n  border:1px solid #c8d2df!important;\n  border-radius:7px!important;\n  overflow:hidden!important;\n  box-sizing:border-box!important;\n}\n#p-arma .bars .bar>div>i,#p-local .bars .bar>div>i,#p-abord .bars .bar>div>i{\n  display:block!important;\n  position:absolute!important;\n  left:0!important;\n  top:0!important;\n  height:100%!important;\n  min-width:3px!important;\n  max-width:100%!important;\n  margin:0!important;\n  padding:0!important;\n  background:linear-gradient(90deg,#6f98bf,#123b63)!important;\n  border-radius:6px!important;\n  box-sizing:border-box!important;\n}\n#p-arma .bars .bar>div>em,#p-local .bars .bar>div>em,#p-abord .bars .bar>div>em{\n  position:absolute!important;\n  right:8px!important;\n  top:50%!important;\n  transform:translateY(-50%)!important;\n  z-index:3!important;\n  display:block!important;\n  font-style:normal!important;\n  font-size:.72rem!important;\n  font-weight:800!important;\n  color:#102033!important;\n  white-space:nowrap!important;\n}\n#p-arma .bars .bar .bardelta,#p-local .bars .bar .bardelta,#p-abord .bars .bar .bardelta{\n  grid-column:2!important;\n  grid-row:2!important;\n  width:100%!important;\n  height:14px!important;\n  margin:0!important;\n  padding:0!important;\n  font-size:.60rem!important;\n  line-height:14px!important;\n  white-space:nowrap!important;\n}\n@media(max-width:900px){\n  #p-arma .bars .bar,#p-local .bars .bar,#p-abord .bars .bar{grid-template-columns:145px minmax(100px,1fr) 105px!important;column-gap:8px!important}\n  #p-arma .bars .bar>b,#p-local .bars .bar>b,#p-abord .bars .bar>b{max-width:145px!important}\n}\n@media(max-width:600px){\n  #p-arma .bars .bar,#p-local .bars .bar,#p-abord .bars .bar{grid-template-columns:1fr!important;grid-template-rows:22px 22px 14px!important;row-gap:3px!important}\n  #p-arma .bars .bar>b,#p-local .bars .bar>b,#p-abord .bars .bar>b{grid-column:1!important;grid-row:1!important;max-width:100%!important}\n  #p-arma .bars .bar>div,#p-local .bars .bar>div,#p-abord .bars .bar>div{grid-column:1!important;grid-row:2!important}\n  #p-arma .bars .bar .bardelta,#p-local .bars .bar .bardelta,#p-abord .bars .bar .bardelta{grid-column:1!important;grid-row:3!important}\n}\n</style>\n'''
+          s = s.replace('</head>', css + '</head>', 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Publicar correção
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo 'Nenhuma alteração necessária.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Fix barras Roubo a Estabelecimento Comercial'
+          git push
