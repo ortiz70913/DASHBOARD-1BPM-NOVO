@@ -24,6 +24,41 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Corrigir barras da aba Roubo a Pedestre antes da publicacao
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.find('function bars(el,list,tot)')
+          end=s.find('const rank=',start)
+          if start>=0 and end>=0:
+              new_bars='''function bars(el,list,tot){
+            const mx=list.length?Number(list[0][1])||1:1;
+            el.innerHTML=list.map((t,i)=>{
+              const value=Number(t[1])||0;
+              const width=Math.max(0,Math.min(100,(value/mx)*100));
+              return '<div class="hb ped-hb'+(i===0&&value?' top':'')+'"><span>'+t[0]+'</span><div class="bar-track"><i class="bar-fill" style="width:'+width+'%"></i></div><b>'+value+' <u>'+pct(value,tot)+'%</u></b></div>';
+            }).join('');
+          }
+          '''
+              s=s[:start]+new_bars+s[end:]
+          css='''<style id="pedestre-bars-pages-fix">
+          #p-arma .ped-hb,#p-local .ped-hb,#p-abord .ped-hb{display:grid!important;grid-template-columns:minmax(130px,220px) minmax(180px,1fr) 105px!important;align-items:center!important;gap:12px!important;width:100%!important;min-height:38px!important;margin:7px 0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important}
+          #p-arma .ped-hb>span,#p-local .ped-hb>span,#p-abord .ped-hb>span{display:block!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-weight:800!important}
+          #p-arma .ped-hb>.bar-track,#p-local .ped-hb>.bar-track,#p-abord .ped-hb>.bar-track{display:block!important;position:relative!important;width:100%!important;height:20px!important;min-width:0!important;background:#e5e7eb!important;border:1px solid #cbd5e1!important;border-radius:5px!important;overflow:hidden!important;visibility:visible!important;opacity:1!important}
+          #p-arma .ped-hb>.bar-track>.bar-fill,#p-local .ped-hb>.bar-track>.bar-fill,#p-abord .ped-hb>.bar-track>.bar-fill{display:block!important;position:absolute!important;left:0!important;top:0!important;bottom:0!important;min-width:2px!important;max-width:100%!important;background:#0b4f8a!important;border-radius:4px!important;visibility:visible!important;opacity:1!important}
+          #p-arma .ped-hb.top>.bar-track>.bar-fill,#p-local .ped-hb.top>.bar-track>.bar-fill,#p-abord .ped-hb.top>.bar-track>.bar-fill{background:#0b2545!important}
+          #p-arma .ped-hb>b,#p-local .ped-hb>b,#p-abord .ped-hb>b{display:block!important;width:105px!important;text-align:left!important;white-space:nowrap!important;font-weight:900!important;overflow:visible!important}
+          #p-arma .ped-hb>b>u,#p-local .ped-hb>b>u,#p-abord .ped-hb>b>u{text-decoration:none!important;color:#5b6b7f!important;font-weight:600!important;font-size:.75rem!important}
+          @media(max-width:600px){#p-arma .ped-hb,#p-local .ped-hb,#p-abord .ped-hb{grid-template-columns:minmax(90px,125px) minmax(80px,1fr) 88px!important;gap:7px!important}.ped-hb>.bar-track{height:18px!important}}
+          </style>'''
+          s=s.replace('</head>',css+'</head>',1)
+          p.write_text(s,encoding='utf-8')
+          print('Barras de Roubo a Pedestre corrigidas no artefato do Pages.')
+          PY
+
       - name: Configurar Pages
         uses: actions/configure-pages@v5
 
