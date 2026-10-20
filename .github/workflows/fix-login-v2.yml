@@ -28,8 +28,6 @@ jobs:
           if old_tag in s:
               s = s.replace(old_tag, new_tag, 1)
               print('Biblioteca Supabase alterada para unpkg.')
-          else:
-              print('Tag jsDelivr nao encontrada; mantendo a tag atual.')
 
           old_guard = "if(!sb)throw new Error('A conexão com o Supabase não foi inicializada. Atualize a página e tente novamente.');"
           new_guard = """if(!sb){
@@ -41,8 +39,25 @@ jobs:
           if old_guard in s:
               s = s.replace(old_guard, new_guard, 1)
               print('Guard de login corrigido.')
+
+          old_show = "function showApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('appShell').style.display='block';document.getElementById('userEmail').textContent=session?.user?.email||'';document.getElementById('userRole').textContent=ROLE_NAMES[role]||role;document.getElementById('up').style.display=['admin','operador'].includes(role)?'':'none';}"
+          new_show = """function showApp(){
+    const loginScreen=document.getElementById('loginScreen');
+    const appShell=document.getElementById('appShell');
+    if(loginScreen)loginScreen.style.display='none';
+    if(appShell)appShell.style.display='block';
+    const userEmail=document.getElementById('userEmail');
+    const userRole=document.getElementById('userRole');
+    const up=document.getElementById('up');
+    if(userEmail)userEmail.textContent=session?.user?.email||'';
+    if(userRole)userRole.textContent=ROLE_NAMES[role]||role;
+    if(up)up.style.display=['admin','operador'].includes(role)?'':'none';
+  }"""
+          if old_show in s:
+              s = s.replace(old_show, new_show, 1)
+              print('Erro Cannot read properties of null corrigido em showApp.')
           else:
-              print('Guard antigo nao encontrado; pode ja estar corrigido.')
+              print('showApp ja corrigido ou trecho nao encontrado.')
 
           p.write_text(s, encoding='utf-8')
 
@@ -52,5 +67,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           git diff --cached --quiet && exit 0
-          git commit -m "Corrigir inicializacao do Supabase no login"
+          git commit -m "Corrigir erro de elementos nulos no login"
           git push
