@@ -3,206 +3,140 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dashboard 1º BPM — Gráficos</title>
-<style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}iframe{width:100%;height:100%;border:0;display:block}</style>
+<title>Dashboard 1º BPM — Roubo a Estabelecimento Comercial</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#f4f6f9}
+iframe{width:100%;height:100%;border:0;display:block}
+</style>
 </head>
 <body>
-<iframe id="dash" src="index.html" title="Dashboard 1º BPM"></iframe>
+<iframe id="dash" src="./index.html" title="Dashboard 1º BPM"></iframe>
 <script>
 /*
-  CORREÇÃO DAS BARRAS:
-  O index.html usa .hb (não .bars .bar). Portanto este arquivo apenas
-  estiliza os elementos .hb que o dashboard já gera, sem duplicar dados.
+  O index.html já cria os gráficos com .hb.
+  Este arquivo NÃO duplica os dados: apenas transforma os .hb em barras visíveis.
 */
-const styleText=`
-/* manter a remoção somente da seção Incidência por CIA */
+const CSS=`
 #p-cia{display:none!important}
 
-/* todas as listas horizontais do dashboard */
 .hb{
-  display:grid!important;
-  grid-template-columns:minmax(170px,260px) minmax(260px,1fr) 120px!important;
-  gap:12px!important;
-  align-items:center!important;
-  width:100%!important;
-  min-height:34px!important;
-  margin:8px 0!important;
-  padding:0!important;
-  font-size:.86rem!important;
-  overflow:visible!important;
-  box-sizing:border-box!important;
+ display:grid!important;
+ grid-template-columns:minmax(170px,260px) minmax(220px,1fr) 125px!important;
+ align-items:center!important;
+ column-gap:12px!important;
+ width:100%!important;
+ min-height:36px!important;
+ margin:7px 0!important;
+ padding:0!important;
+ box-sizing:border-box!important;
+ overflow:visible!important;
 }
-
-/* nome do item */
 .hb>span{
-  grid-column:1!important;
-  grid-row:1!important;
-  display:block!important;
-  min-width:0!important;
-  margin:0!important;
-  padding:0!important;
-  color:var(--ink,#0f1c2e)!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-  overflow:hidden!important;
-  text-overflow:ellipsis!important;
+ grid-column:1!important;grid-row:1!important;
+ display:block!important;min-width:0!important;
+ color:var(--ink,#10233d)!important;
+ font-weight:800!important;font-size:.86rem!important;
+ line-height:1.2!important;white-space:nowrap!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;
 }
-
-/* trilho */
 .hb>div{
-  grid-column:2!important;
-  grid-row:1!important;
-  position:relative!important;
-  display:block!important;
-  width:100%!important;
-  height:22px!important;
-  min-height:22px!important;
-  margin:0!important;
-  padding:0!important;
-  background:#e8edf3!important;
-  border:1px solid #ccd6e1!important;
-  border-radius:7px!important;
-  overflow:hidden!important;
-  box-sizing:border-box!important;
+ grid-column:2!important;grid-row:1!important;
+ display:block!important;position:relative!important;
+ width:100%!important;height:23px!important;
+ margin:0!important;padding:0!important;
+ background:#e8edf3!important;
+ border:1px solid #cbd6e2!important;
+ border-radius:7px!important;overflow:hidden!important;
+ box-sizing:border-box!important;
 }
-
-/* preenchimento proporcional já calculado pelo index.html */
 .hb>div>i{
-  display:block!important;
-  height:100%!important;
-  min-width:2px!important;
-  max-width:100%!important;
-  margin:0!important;
-  padding:0!important;
-  background:linear-gradient(90deg,#8aa9cc,#123457)!important;
-  border-radius:6px!important;
-  box-sizing:border-box!important;
-  transition:width .25s ease!important;
+ display:block!important;
+ height:100%!important;
+ margin:0!important;padding:0!important;
+ min-width:2px!important;max-width:100%!important;
+ background:linear-gradient(90deg,#8aa9cc,#123457)!important;
+ border-radius:6px!important;
+ box-sizing:border-box!important;
 }
-
-/* primeiro colocado */
 .hb.top>div>i{background:linear-gradient(90deg,#5d86b0,#0b2545)!important}
-
-/* valor e percentual fora da barra */
 .hb>b{
-  grid-column:3!important;
-  grid-row:1!important;
-  display:block!important;
-  width:120px!important;
-  margin:0!important;
-  padding:0!important;
-  color:var(--ink,#0f1c2e)!important;
-  text-align:left!important;
-  font-weight:800!important;
-  white-space:nowrap!important;
-  overflow:visible!important;
+ grid-column:3!important;grid-row:1!important;
+ display:block!important;width:125px!important;
+ margin:0!important;padding:0!important;
+ color:var(--ink,#10233d)!important;
+ font-size:.82rem!important;font-weight:900!important;
+ line-height:1.2!important;text-align:left!important;
+ white-space:nowrap!important;overflow:visible!important;
+}
+.hb>b>u{
+ text-decoration:none!important;
+ color:var(--mut,#5b6b7f)!important;
+ font-weight:600!important;font-size:.76rem!important;
 }
 
-.hb>b u{
-  text-decoration:none!important;
-  color:var(--mut,#5b6b7f)!important;
-  font-weight:500!important;
-  font-size:.78rem!important;
+#p-estab .hb,#p-tipoc .hb,#p-logr .hb,
+#p-arma .hb,#p-local .hb,#p-abord .hb{
+ min-height:38px!important;margin:8px 0!important;
 }
-
-/* CIA continua removida da dashboard */
-#p-cia{display:none!important}
-
-/* ajuste específico dos gráficos da aba Roubo a Estabelecimento */
-#p-estab .hb,
-#p-tipoc .hb,
-#p-logr .hb,
-#p-arma .hb,
-#p-local .hb,
-#p-abord .hb{
-  min-height:36px!important;
-}
-
-#p-estab .hb>div,
-#p-tipoc .hb>div,
-#p-logr .hb>div,
-#p-arma .hb>div,
-#p-local .hb>div,
-#p-abord .hb>div{
-  height:24px!important;
+#p-estab .hb>div,#p-tipoc .hb>div,#p-logr .hb>div,
+#p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{
+ height:24px!important;
 }
 
 @media(max-width:900px){
-  .hb{
-    grid-template-columns:minmax(120px,200px) minmax(160px,1fr) 105px!important;
-    gap:9px!important;
-  }
-  .hb>b{width:105px!important;font-size:.78rem!important}
-  .hb>b u{font-size:.70rem!important}
-  .hb>span{font-size:.80rem!important}
+ .hb{grid-template-columns:minmax(125px,200px) minmax(140px,1fr) 105px!important;column-gap:8px!important}
+ .hb>span{font-size:.78rem!important}
+ .hb>b{width:105px!important;font-size:.74rem!important}
+ .hb>b>u{font-size:.68rem!important}
 }
-
 @media(max-width:600px){
-  .hb{
-    grid-template-columns:minmax(100px,150px) minmax(100px,1fr) 92px!important;
-    gap:7px!important;
-    font-size:.74rem!important;
-  }
-  .hb>b{width:92px!important;font-size:.70rem!important}
-  .hb>b u{font-size:.64rem!important}
+ .hb{grid-template-columns:minmax(95px,140px) minmax(80px,1fr) 88px!important;column-gap:6px!important}
+ .hb>span{font-size:.68rem!important}
+ .hb>b{width:88px!important;font-size:.64rem!important}
+ .hb>b>u{font-size:.58rem!important}
 }
 `;
 
-function inject(d){
-  if(!d||!d.head)return;
-  let st=d.getElementById('graficos-fix-final');
-  if(!st){st=d.createElement('style');st.id='graficos-fix-final';d.head.appendChild(st)}
-  st.textContent=styleText;
-}
-
-function removeCIA(d){
-  const p=d&&d.querySelector('#p-cia');
-  if(p)p.remove();
-}
-
-function fixBars(d){
-  if(!d||!d.body)return;
-  inject(d);
-  removeCIA(d);
-
-  /* O index.html já gera as barras como .hb. Apenas garantimos o layout. */
-  d.querySelectorAll('.hb').forEach(row=>{
-    const track=row.querySelector(':scope > div');
-    const fill=track&&track.querySelector(':scope > i');
-    if(!track||!fill)return;
-    track.style.display='block';
-    track.style.position='relative';
-    track.style.overflow='hidden';
-    fill.style.display='block';
-    fill.style.maxWidth='100%';
-  });
+function corrigir(doc){
+ if(!doc||!doc.body)return;
+ let st=doc.getElementById('roubo-graficos-final');
+ if(!st){st=doc.createElement('style');st.id='roubo-graficos-final';doc.head.appendChild(st)}
+ st.textContent=CSS;
+ const cia=doc.querySelector('#p-cia');
+ if(cia)cia.remove();
+ doc.querySelectorAll('.hb').forEach(row=>{
+   const track=row.querySelector(':scope > div');
+   const fill=track&&track.querySelector(':scope > i');
+   if(!track||!fill)return;
+   track.style.display='block';
+   track.style.position='relative';
+   track.style.overflow='hidden';
+   fill.style.display='block';
+   fill.style.height='100%';
+ });
 }
 
 const frame=document.getElementById('dash');
-let timer=null;
-function run(){
-  try{
-    const d=frame.contentDocument;
-    if(!d)return;
-    fixBars(d);
-  }catch(e){console.error('GRÁFICOS:',e)}
+let observer=null,timer=null;
+function executar(){
+ try{
+   const doc=frame.contentDocument;
+   if(!doc)return;
+   corrigir(doc);
+   if(!observer&&doc.body){
+     observer=new MutationObserver(()=>{
+       clearTimeout(timer);
+       timer=setTimeout(()=>corrigir(doc),80);
+     });
+     observer.observe(doc.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['style','class']});
+   }
+ }catch(e){console.error(e)}
 }
-
 frame.addEventListener('load',()=>{
-  run();
-  [250,700,1400,2500,5000,8000].forEach(ms=>setTimeout(run,ms));
-  try{
-    const d=frame.contentDocument;
-    if(d&&d.body){
-      new MutationObserver(()=>{
-        clearTimeout(timer);
-        timer=setTimeout(run,120);
-      }).observe(d.body,{childList:true,subtree:true,characterData:true});
-    }
-  }catch(e){console.error('OBSERVER:',e)}
+ executar();
+ [100,300,700,1200,2000,3500,5000,8000].forEach(ms=>setTimeout(executar,ms));
 });
-
-setTimeout(run,300);
+setTimeout(executar,500);
 </script>
 </body>
 </html>
