@@ -122,3 +122,44 @@ window.p6 = null;
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fixMonthlyChart,{once:true});else setTimeout(fixMonthlyChart,0);
   new MutationObserver(fixMonthlyChart).observe(document.documentElement,{childList:true,subtree:true});
 })();
+
+/* CORRECAO DEFINITIVA DAS BARRAS DO ROUBO A PEDESTRE */
+(function(){
+  const css=document.createElement('style');
+  css.id='pedestre-bars-force-v10';
+  css.textContent=`
+    #p-arma .hb,#p-local .hb,#p-abord .hb{display:grid!important;grid-template-columns:140px minmax(120px,1fr) 110px!important;align-items:center!important;gap:10px!important;width:100%!important;min-height:36px!important;margin:6px 0!important;}
+    #p-arma .hb>span,#p-local .hb>span,#p-abord .hb>span{display:block!important;font-weight:800!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;}
+    #p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{display:block!important;position:relative!important;width:100%!important;height:20px!important;min-width:40px!important;background:#dfe5ec!important;border:1px solid #cbd5e1!important;border-radius:5px!important;overflow:hidden!important;visibility:visible!important;opacity:1!important;}
+    #p-arma .hb>div>i,#p-local .hb>div>i,#p-abord .hb>div>i{display:block!important;position:absolute!important;left:0!important;top:0!important;height:100%!important;min-width:3px!important;background:#0b4f8a!important;border-radius:4px!important;visibility:visible!important;opacity:1!important;}
+    #p-arma .hb.top>div>i,#p-local .hb.top>div>i,#p-abord .hb.top>div>i{background:#0b2545!important;}
+    #p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{display:block!important;width:110px!important;text-align:left!important;white-space:nowrap!important;font-weight:900!important;overflow:visible!important;}
+    #p-arma .hb>b>u,#p-local .hb>b>u,#p-abord .hb>b>u{text-decoration:none!important;color:#5b6b7f!important;font-size:.75rem!important;}
+    @media(max-width:700px){#p-arma .hb,#p-local .hb,#p-abord .hb{grid-template-columns:105px minmax(80px,1fr) 88px!important;gap:7px!important}#p-arma .hb>div,#p-local .hb>div,#p-abord .hb>div{height:18px!important}#p-arma .hb>b,#p-local .hb>b,#p-abord .hb>b{width:88px!important;font-size:.72rem!important}}
+  `;
+  document.head.appendChild(css);
+  function force(){
+    ['p-arma','p-local','p-abord'].forEach(pid=>{
+      const root=document.getElementById(pid);
+      if(!root)return;
+      root.querySelectorAll('.hb').forEach(row=>{
+        const track=row.children[1],fill=track&&track.children[0];
+        if(!track||!fill)return;
+        track.style.setProperty('display','block','important');
+        track.style.setProperty('width','100%','important');
+        track.style.setProperty('height','20px','important');
+        track.style.setProperty('background','#dfe5ec','important');
+        track.style.setProperty('visibility','visible','important');
+        track.style.setProperty('opacity','1','important');
+        fill.style.setProperty('display','block','important');
+        fill.style.setProperty('height','100%','important');
+        fill.style.setProperty('min-width','3px','important');
+        fill.style.setProperty('background','#0b4f8a','important');
+        fill.style.setProperty('visibility','visible','important');
+        fill.style.setProperty('opacity','1','important');
+      });
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',force);else setTimeout(force,50);
+  new MutationObserver(force).observe(document.documentElement,{childList:true,subtree:true});
+})();
