@@ -1,0 +1,14 @@
+name: Verificar barras estabelecimento
+on:
+  push:
+    branches: [main]
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verificar código das barras
+        run: |
+          grep -q "function bars" index.html
+          grep -q "class=\"hb" index.html
+          echo "Estrutura das barras encontrada no dashboard."
